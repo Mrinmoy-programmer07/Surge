@@ -1,0 +1,110 @@
+{
+  "matchmakingQueue": {
+    "queueId_1": {
+      "playerAddress": "0x1234567890abcdef",
+      "gameType": "Number Memory Battle",
+      "stake": 1.0,
+      "timestamp": 1633072800000,
+      "status": "waiting"
+    }
+  },
+  "games": {
+    "gameId_1": {
+      "player1Id": "playerId_1",
+      "player2Id": "playerId_2",
+      "gameType": "Word Scramble Duel",
+      "startTime": 1633072800000,
+      "endTime": 1633072805000,
+      "winnerId": "playerId_1",
+      "stakes": {
+        "player1Stake": 1.0,
+        "player2Stake": 1.0
+      },
+      "status": "completed"
+    }
+  },
+  "challenges": {
+    "challengeId_1": {
+      "creatorId": "playerId_1",
+      "gameType": "Pattern Predictor",
+      "stake": 0.5,
+      "status": "open",
+      "createdAt": 1633072800000,
+      "expiresAt": 1633076400000
+    }
+  },
+  "players": {
+    "playerId_1": {
+      "username": "gamer123",
+      "walletAddress": "0x1234567890abcdef",
+      "wins": 10,
+      "losses": 5,
+      "totalEarnings": 15.0,
+      "createdAt": 1633072800000,
+      "lastActive": 1633076400000
+    },
+    "playerId_2": {
+      "username": "gamer456",
+      "walletAddress": "0xfedcba0987654321",
+      "wins": 8,
+      "losses": 3,
+      "totalEarnings": 12.0,
+      "createdAt": 1633072800000,
+      "lastActive": 1633076400000
+    }
+  },
+  "leaderboard": {
+    "rankings": {
+      "hourly": {
+        "1": {
+          "playerId": "playerId_1",
+          "username": "gamer123",
+          "wins": 10,
+          "totalEarnings": 15.0
+        },
+        "2": {
+          "playerId": "playerId_2",
+          "username": "gamer456",
+          "wins": 8,
+          "totalEarnings": 12.0
+        }
+      }
+    }
+  },
+  "matchHistory": {
+    "matchId_1": {
+      "gameId": "gameId_1",
+      "player1Id": "playerId_1",
+      "player2Id": "playerId_2",
+      "winnerId": "playerId_1",
+      "gameType": "Reflex War",
+      "stakes": {
+        "player1Stake": 1.0,
+        "player2Stake": 1.0
+      },
+      "timestamp": 1633072805000,
+      "player1Perspective": {
+        "outcome": "win",
+        "score": 5
+      },
+      "player2Perspective": {
+        "outcome": "loss",
+        "score": 3
+      }
+    }
+  },
+  "notifications": {
+    "notificationId_1": {
+      "userId": "playerId_1",
+      "message": "You have a new challenge!",
+      "timestamp": 1633072800000,
+      "isRead": false
+    }
+  },
+  "platformStats": {
+    "dailyActiveUsers": 150,
+    "totalGamesPlayed": 1000,
+    "totalRevenue": 1500.0,
+    "timestamp": 1633072800000
+  }
+}
