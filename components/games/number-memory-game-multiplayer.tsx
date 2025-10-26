@@ -129,11 +129,11 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
   // Move to input phase after display
   useEffect(() => {
     if (gamePhase === "display" && displayIndex === sequence.length && sequence.length > 0) {
-      setGamePhase("input")
-      setDisplayIndex(0)
-      
-      // Both players can play simultaneously in API polling mode
-      setIsMyTurn(true)
+      setTimeout(() => {
+        setGamePhase("input")
+        setDisplayIndex(0)
+        setIsMyTurn(true)
+      }, 500) // Small delay before input phase
     }
   }, [displayIndex, gamePhase, sequence])
 
@@ -420,9 +420,25 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
           </div>
 
           {gamePhase === "display" && (
-            <div className="flex items-center justify-center h-48 bg-muted rounded-lg mb-8">
-              <p className="text-6xl font-bold text-foreground animate-fade-in">
-                {sequence[displayIndex]}
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center h-48 bg-muted rounded-lg">
+                <p className="text-6xl font-bold text-foreground animate-fade-in">
+                  {sequence[displayIndex]}
+                </p>
+              </div>
+              {/* Progress indicator */}
+              <div className="flex justify-center gap-2 mt-4">
+                {sequence.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 rounded-full ${
+                      index <= displayIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Memorize the numbers... ({displayIndex + 1}/{sequence.length})
               </p>
             </div>
           )}
@@ -430,22 +446,9 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
           {gamePhase === "input" && isMyTurn && (
             <div className="text-center mb-8">
               <h2 className="text-xl font-semibold mb-4">Your turn!</h2>
-              <div className="mb-4">
-                <p className="text-sm text-muted-foreground">Click the numbers in the correct order as they appeared</p>
-                <div className="mt-2 p-2 bg-muted rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Remember this sequence:</p>
-                  <div className="flex justify-center gap-2">
-                    {sequence.map((num, index) => (
-                      <div
-                        key={index}
-                        className="w-8 h-8 bg-primary text-primary-foreground rounded flex items-center justify-center text-sm font-bold"
-                      >
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Click the numbers in the correct order from memory
+              </p>
               
               {/* Number Grid */}
               <div className="grid grid-cols-5 gap-4 max-w-md mx-auto mb-4">
@@ -464,15 +467,19 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
               {/* Current Input */}
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground mb-2">Your input:</p>
-                <div className="flex justify-center gap-2">
-                  {playerInput.map((num, index) => (
-                    <div
-                      key={index}
-                      className="w-8 h-8 bg-primary text-primary-foreground rounded flex items-center justify-center text-sm font-bold"
-                    >
-                      {num}
-                    </div>
-                  ))}
+                <div className="flex justify-center gap-2 min-h-8">
+                  {playerInput.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No numbers entered yet</p>
+                  ) : (
+                    playerInput.map((num, index) => (
+                      <div
+                        key={index}
+                        className="w-8 h-8 bg-primary text-primary-foreground rounded flex items-center justify-center text-sm font-bold"
+                      >
+                        {num}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
