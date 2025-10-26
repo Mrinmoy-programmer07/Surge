@@ -85,13 +85,14 @@ This will start:
 
 ### Contract Address
 ```
-0xae63Cd90dBA5014588228Db306aFBd5Cb6A856E2
+0x839595349fc4b54dbed8db3c96f26db6267e6bc5
+
 ```
 
 ### Network
 - **Network**: CELO Sepolia Testnet
 - **Chain ID**: 11142220
-- **Explorer**: [View on Celoscan](https://sepolia.celoscan.io/address/0xae63Cd90dBA5014588228Db306aFBd5Cb6A856E2)
+- **Explorer**: [View on Celoscan](https://sepolia.celoscan.io/address/0x839595349fc4b54dbed8db3c96f26db6267e6bc5)
 
 ### Contract Functions
 - `createGame()` - Create a new gaming challenge
@@ -224,3 +225,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Built with ❤️ by the Surge Team**
 
 *Experience the future of gaming on CELO blockchain*
+
