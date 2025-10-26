@@ -101,6 +101,22 @@ export async function PUT(
         player1Score: match.player1Score,
         player2Score: match.player2Score,
       });
+
+      // Submit score to smart contract
+      try {
+        await fetch(`${request.nextUrl.origin}/api/contract/submit-score`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            matchId,
+            playerAddress,
+            score,
+          }),
+        });
+        console.log(`✅ Score submitted to smart contract for player1`);
+      } catch (error) {
+        console.error("❌ Failed to submit score to smart contract:", error);
+      }
     } else if (match.player2Score === null && match.player1 !== playerAddress) {
       // Second player to submit - becomes player2
       match.player2 = playerAddress;
@@ -111,6 +127,53 @@ export async function PUT(
         player1Score: match.player1Score,
         player2Score: match.player2Score,
       });
+
+      // Submit score to smart contract
+      try {
+        await fetch(`${request.nextUrl.origin}/api/contract/submit-score`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            matchId,
+            playerAddress,
+            score,
+          }),
+        });
+        console.log(`✅ Score submitted to smart contract for player2`);
+      } catch (error) {
+        console.error("❌ Failed to submit score to smart contract:", error);
+      }
+
+      // Both scores submitted, determine winner and declare on-chain
+      if (match.player1Score !== null && match.player2Score !== null) {
+        const winnerAddress =
+          match.player1Score > match.player2Score
+            ? match.player1
+            : match.player2Score > match.player1Score
+            ? match.player2
+            : match.player1; // Draw: player1 wins
+
+        match.winner = winnerAddress;
+        match.status = "finished";
+
+        // Declare winner on smart contract
+        try {
+          await fetch(`${request.nextUrl.origin}/api/contract/declare-winner`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              matchId,
+              winnerAddress,
+            }),
+          });
+          console.log(`🏆 Winner declared on smart contract: ${winnerAddress}`);
+        } catch (error) {
+          console.error(
+            "❌ Failed to declare winner on smart contract:",
+            error
+          );
+        }
+      }
     } else {
       console.log(
         `⚠️ Score submission ignored (both players already submitted)`,
@@ -122,8 +185,8 @@ export async function PUT(
     }
   }
 
-  // Update winner
-  if (winner) {
+  // Update winner (manual override if needed)
+  if (winner && !match.winner) {
     match.winner = winner;
     match.status = "finished";
     console.log(`🏆 Winner set: ${winner}`, {
@@ -132,6 +195,21 @@ export async function PUT(
       player1Score: match.player1Score,
       player2Score: match.player2Score,
     });
+
+    // Declare winner on smart contract
+    try {
+      await fetch(`${request.nextUrl.origin}/api/contract/declare-winner`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matchId,
+          winnerAddress: winner,
+        }),
+      });
+      console.log(`🏆 Winner declared on smart contract: ${winner}`);
+    } catch (error) {
+      console.error("❌ Failed to declare winner on smart contract:", error);
+    }
   }
 
   // Check if both players have submitted scores

@@ -3,17 +3,23 @@
 import { useState, useEffect, useRef } from "react";
 import { useAccount } from "wagmi";
 
-interface MatchmakingMessage {
-  type: "MATCH_FOUND" | "PONG" | "ERROR";
-  payload?: {
-    player1: string;
-    player2: string;
-    gameType: string;
-    stake: number;
-    matchId: string;
-    gameStartTime: number;
-  };
-}
+type MatchFoundPayload = {
+  player1: string;
+  player2: string;
+  gameType: string;
+  stake: number;
+  matchId: string;
+  gameStartTime: number;
+};
+
+type ErrorPayload = {
+  message: string;
+};
+
+type MatchmakingMessage =
+  | { type: "MATCH_FOUND"; payload: MatchFoundPayload }
+  | { type: "PONG" }
+  | { type: "ERROR"; payload: ErrorPayload };
 
 export function useWebSocketMatchmaking(gameType: string, stake: string) {
   const [opponent, setOpponent] = useState<string | null>(null);
