@@ -26,6 +26,9 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
   const [waitingForOpponent, setWaitingForOpponent] = useState(false)
   const [waitingTimer, setWaitingTimer] = useState<number>(5)
   const winnerSubmittedRef = useRef(false)
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [withdrawn, setWithdrawn] = useState(false)
+  const [withdrawTxHash, setWithdrawTxHash] = useState<string | null>(null)
 
   const { 
     matchState, 
@@ -43,6 +46,56 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
       ;[scrambled[i], scrambled[j]] = [scrambled[j], scrambled[i]]
     }
     return scrambled
+  }
+
+  // Handle withdrawal
+  const handleWithdraw = async () => {
+    if (withdrawing || withdrawn) return
+    
+    setWithdrawing(true)
+    
+    try {
+      const totalPot = parseFloat(stake) * 2 // Both players' stakes
+      const platformFee = totalPot * 0.25 // 25% platform fee
+      const winnerPayout = totalPot * 0.75 // 75% to winner (1.5 CELO if stake is 1)
+      
+      console.log('💰 Requesting withdrawal:', {
+        matchId,
+        playerAddress: account,
+        stake: stake,
+        totalPot: totalPot,
+        platformFee: platformFee,
+        winnerPayout: winnerPayout
+      })
+      
+      const response = await fetch('/api/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchId,
+          playerAddress: account,
+          amount: winnerPayout.toString(),
+          stake: stake,
+          platformFee: platformFee.toString()
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log('✅ Withdrawal successful:', data)
+        setWithdrawn(true)
+        setWithdrawTxHash(data.txHash)
+      } else {
+        console.error('❌ Withdrawal failed:', data.error)
+        alert('Withdrawal failed: ' + (data.error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Withdrawal error:', error)
+      alert('Withdrawal failed. Please try again.')
+    } finally {
+      setWithdrawing(false)
+    }
   }
 
   // Initialize match on mount
@@ -224,6 +277,13 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
     const isWinner = winnerAddress === account
     const isDraw = myFinalScore === opponentFinalScore
     const winnerText = isDraw ? "It's a Draw!" : isWinner ? "You Win! 🎉" : "Opponent Wins!"
+    
+    // Calculate winnings: 75% of total pot (2x stake)
+    const totalPot = parseFloat(stake) * 2
+    const platformFee = totalPot * 0.25 // 25% platform fee
+    const winnerPayout = totalPot * 0.75 // 75% to winner
+    const formattedPayout = winnerPayout.toFixed(4)
+    const formattedFee = platformFee.toFixed(4)
 
     return (
       <div className="min-h-screen bg-linear-to-br from-background via-card to-background py-8">
@@ -243,12 +303,56 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
                 <p className="text-3xl font-bold text-secondary">{opponentFinalScore ?? 0}</p>
               </div>
             </div>
+            
+            {/* Winnings Display */}
+            {isWinner && !isDraw && (
+              <div className="mb-6 p-4 bg-green-100 dark:bg-green-900/20 rounded-lg border-2 border-green-500">
+                <p className="text-lg font-semibold text-green-800 dark:text-green-400 mb-3">
+                  💰 You Won {formattedPayout} CELO!
+                </p>
+                <div className="text-sm text-green-700 dark:text-green-500 space-y-1">
+                  <p>Total Pot: {stake} + {stake} = {totalPot.toFixed(4)} CELO</p>
+                  <p>Platform Fee (25%): {formattedFee} CELO</p>
+                  <p className="font-bold text-base">Your Payout (75%): {formattedPayout} CELO</p>
+                </div>
+              </div>
+            )}
+            
             <div className="text-sm text-muted-foreground mb-8">
               <p>Match ID: {matchId}</p>
               <p>Game Status: {matchState.status}</p>
+              {withdrawTxHash && (
+                <p className="text-green-600 dark:text-green-400 mt-2">
+                  Withdrawal Tx: {withdrawTxHash.substring(0, 10)}...{withdrawTxHash.substring(withdrawTxHash.length - 8)}
+                </p>
+              )}
             </div>
-            <div className="flex justify-center">
-              <Button onClick={() => window.location.reload()} className="px-8 py-4 text-lg">
+            
+            <div className="flex flex-col gap-3 items-center">
+              {/* Withdraw Button - Only show for winner */}
+              {isWinner && !isDraw && !withdrawn && (
+                <Button 
+                  onClick={handleWithdraw} 
+                  disabled={withdrawing}
+                  className="px-8 py-4 text-lg bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {withdrawing ? 'Processing...' : `Withdraw ${formattedPayout} CELO`}
+                </Button>
+              )}
+              
+              {/* Already Withdrawn Message */}
+              {withdrawn && (
+                <div className="text-green-600 dark:text-green-400 font-semibold">
+                  ✅ Successfully Withdrawn {formattedPayout} CELO!
+                </div>
+              )}
+              
+              {/* Play Again Button */}
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="px-8 py-4 text-lg"
+                variant="outline"
+              >
                 Play Again
               </Button>
             </div>

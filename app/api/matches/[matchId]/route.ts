@@ -91,20 +91,34 @@ export async function PUT(
 
   // Update player score
   if (playerAddress && typeof score === "number") {
-    if (match.player1 === playerAddress) {
+    if (match.player1Score === null) {
+      // First player to submit - becomes player1
+      match.player1 = playerAddress;
       match.player1Score = score;
-      console.log(`📊 Updated player1 score: ${score}`, {
+      console.log(`📊 First player submitted (player1): ${score}`, {
         matchId,
+        playerAddress,
         player1Score: match.player1Score,
         player2Score: match.player2Score,
       });
-    } else if (match.player2 === playerAddress) {
+    } else if (match.player2Score === null && match.player1 !== playerAddress) {
+      // Second player to submit - becomes player2
+      match.player2 = playerAddress;
       match.player2Score = score;
-      console.log(`📊 Updated player2 score: ${score}`, {
+      console.log(`📊 Second player submitted (player2): ${score}`, {
         matchId,
+        playerAddress,
         player1Score: match.player1Score,
         player2Score: match.player2Score,
       });
+    } else {
+      console.log(
+        `⚠️ Score submission ignored (both players already submitted)`,
+        {
+          matchId,
+          playerAddress,
+        }
+      );
     }
   }
 

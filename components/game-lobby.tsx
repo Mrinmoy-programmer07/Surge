@@ -28,12 +28,66 @@ export default function GameLobby({ account, onDisconnect }: GameLobbyProps) {
     setGameState("selecting")
   }
 
-  const handleStakeConfirm = (stakeAmount: string) => {
+  const handleStakeConfirm = async (stakeAmount: string) => {
     setStake(stakeAmount)
-    // Generate match ID and move to waiting room
-    const id = Math.random().toString(36).substring(7)
-    setMatchId(id)
     setGameState("waiting")
+    
+    // Request matchmaking
+    try {
+      const response = await fetch('/api/matchmaking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerAddress: account,
+          gameType: selectedGame,
+          stake: stakeAmount
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.matched) {
+        // Immediate match found
+        console.log('✅ Immediate match found:', data)
+        setMatchId(data.matchId)
+        setOpponent(data.opponent)
+        setGameState("playing")
+      } else {
+        // Waiting for opponent, start polling
+        console.log('⏳ Waiting for opponent...', data)
+        setMatchId(data.matchId)
+        startMatchmakingPoll(data.matchId)
+      }
+    } catch (error) {
+      console.error('Matchmaking error:', error)
+    }
+  }
+  
+  const startMatchmakingPoll = (currentMatchId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/matchmaking?playerAddress=${account}`)
+        const data = await response.json()
+        
+        if (data.matched) {
+          console.log('✅ Match found via polling!')
+          clearInterval(pollInterval)
+          
+          // Fetch the match details to get opponent
+          const matchResponse = await fetch(`/api/matches/${currentMatchId}`)
+          const matchData = await matchResponse.json()
+          
+          const opponentAddress = matchData.player1 === account ? matchData.player2 : matchData.player1
+          setOpponent(opponentAddress)
+          setGameState("playing")
+        }
+      } catch (error) {
+        console.error('Polling error:', error)
+      }
+    }, 2000) // Poll every 2 seconds
+    
+    // Cleanup after 5 minutes
+    setTimeout(() => clearInterval(pollInterval), 5 * 60 * 1000)
   }
 
   const handleGameStart = useCallback((opponentAddress: string) => {
