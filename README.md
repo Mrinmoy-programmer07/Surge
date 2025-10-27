@@ -222,7 +222,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ by the Surge Team**
+**Built with ❤️ by the Team LOCALS**
 
 *Experience the future of gaming on CELO blockchain*
+
 
