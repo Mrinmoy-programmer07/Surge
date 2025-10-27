@@ -1,6 +1,7 @@
 # 🚀 Surge - Web3 P2P Gaming Platform
 
-![Surge Logo](./public/surge-logo.png)
+![Oct-26-0137-2s-202510260142-w5-unscreen](https://github.com/user-attachments/assets/6b8d85a2-c6c0-4d1e-93ff-4838946e426a)
+
 
 **Surge** is a cutting-edge Web3 P2P gaming platform built on the CELO blockchain, offering skill-based challenges with real cryptocurrency rewards. Experience the future of decentralized gaming where players compete, stake, and win in a fair, transparent environment.
 
@@ -225,5 +226,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Built with ❤️ by the Team LOCALS**
 
 *Experience the future of gaming on CELO blockchain*
+
 
 
