@@ -1,0 +1,49 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies (ignore node_modules everywhere)
+node_modules/
+**/node_modules/
+
+# Next.js build outputs (ignore everywhere)
+.next/
+**/.next/
+out/
+**/out/
+
+# production builds
+build/
+**/build/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (ignore in all packages)
+.env*
+**/.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Hardhat/Foundry
+artifacts/
+**/artifacts/
+cache/
+**/cache/
+typechain/
+**/typechain/
+typechain-types/
+**/typechain-types/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Turbopack/Next dev locks
+**/.next/**/lock
