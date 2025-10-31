@@ -24,6 +24,12 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 42220,
     },
+    // Flow EVM Testnet (chainId 545)
+    flowTestnet: {
+      url: process.env.FLOW_TESTNET_RPC || "https://rpc.flow-testnet.example",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 545,
+    },
   },
   etherscan: {
     apiKey: {

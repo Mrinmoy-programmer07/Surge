@@ -163,11 +163,9 @@ export default function WaitingRoom({ gameType, stake, account, onGameStart }: W
   }, [opponent])
 
   // Mark ready when game starts
-  useEffect(() => {
-    if (wsMatchId && gameConnected && address) {
-      markReady(wsMatchId)
-    }
-  }, [wsMatchId, gameConnected, address, markReady])
+  // IMPORTANT: Do NOT mark ready just because the socket is connected.
+  // Readiness is handled above only after the on-chain transaction is confirmed
+  // to prevent one player starting while the other is still funding.
 
   if (!address) {
     return (

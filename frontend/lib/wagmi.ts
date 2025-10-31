@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { http } from "wagmi"
-import { createConfig } from "wagmi"
-import { celoSepoliaTestnet } from "@/lib/chains"
-import { injected } from "wagmi/connectors"
-import { walletConnect } from "wagmi/connectors"
+import { http } from "wagmi";
+import { createConfig } from "wagmi";
+import { celoSepoliaTestnet } from "@/lib/chains";
+import { injected } from "wagmi/connectors";
+import { walletConnect } from "wagmi/connectors";
 
-const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || ""
+const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "";
 
 export const wagmiConfig = createConfig({
   chains: [celoSepoliaTestnet],
@@ -17,10 +17,12 @@ export const wagmiConfig = createConfig({
       showQrModal: true,
       metadata: {
         name: "Surge",
-        description: "Instant P2P competitive gaming on Celo",
+        description: "Instant P2P competitive gaming on Flow EVM Testnet",
         url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
         icons: [
-          `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/surge-logo.png`,
+          `${
+            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+          }/surge-logo.png`,
         ],
       },
     }),
@@ -29,4 +31,4 @@ export const wagmiConfig = createConfig({
   transports: {
     [celoSepoliaTestnet.id]: http(celoSepoliaTestnet.rpcUrls.default.http[0]),
   },
-})
+});

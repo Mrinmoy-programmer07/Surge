@@ -1,25 +1,39 @@
-import { defineChain } from "viem"
-import { sepolia } from "viem/chains"
+import { defineChain } from "viem";
 
+// NOTE: We're migrating the app to use Flow EVM Testnet (chainId 545).
+// To keep imports in other files unchanged, this export keeps the same
+// identifier name (`celoSepoliaTestnet`) so existing imports don't need edits.
+// Replace NEXT_PUBLIC_FLOW_TESTNET_RPC with your preferred RPC endpoint.
 export const celoSepoliaTestnet = defineChain({
-  id: 11142220,
-  name: "Celo Sepolia Testnet",
+  id: 545,
+  name: "Flow EVM Testnet",
+  network: "flow-testnet",
   nativeCurrency: {
     decimals: 18,
-    name: "Celo Sepolia Testnet",
-    symbol: "CELO",
+    name: "Flow EVM Testnet Token",
+    symbol: "tFLOW",
   },
   rpcUrls: {
-    default: { http: ["https://forno.celo-sepolia.celo-testnet.org/"] },
-    public: { http: ["https://forno.celo-sepolia.celo-testnet.org/"] },
+    default: {
+      http: [
+        process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC ||
+          "https://rpc.flow-testnet.example/",
+      ],
+    },
+    public: {
+      http: [
+        process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC ||
+          "https://rpc.flow-testnet.example/",
+      ],
+    },
   },
   blockExplorers: {
     default: {
-      name: "Celo Sepolia Testnet Explorer",
-      url: "https://celo-sepolia.blockscout.com/",
+      name: "Flow EVM Testnet Explorer",
+      url:
+        process.env.NEXT_PUBLIC_FLOW_TESTNET_EXPLORER ||
+        "https://explorer.flow-testnet.example/",
     },
   },
   testnet: true,
-})
-
-export { sepolia }
+});
