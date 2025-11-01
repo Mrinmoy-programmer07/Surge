@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers"
+import PageTransitionLoader from "@/components/ui/page-transition-loader"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -22,7 +23,9 @@ export default function RootLayout({
     <html suppressHydrationWarning lang="en">
       <body className={`font-sans antialiased`}>
         <Providers>
-          {children}
+          <PageTransitionLoader>
+            {children}
+          </PageTransitionLoader>
         </Providers>
       </body>
     </html>

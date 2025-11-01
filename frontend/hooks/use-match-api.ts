@@ -159,6 +159,41 @@ export function useMatchApi(matchId: string, playerAddress: string) {
     };
   }, [matchId, isPolling]);
 
+  // When polling stops or match transitions to finished, do an immediate refresh
+  // and a few short retries so clients that stopped polling (loser) get the final
+  // match state written by declare-winner on the server.
+  useEffect(() => {
+    if (!matchId) return;
+
+    const doRefresh = async () => {
+      try {
+        const resp = await fetch(`/api/matches/${matchId}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          setMatchState(data);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    // Only run this refresh when polling just stopped or when match is finished.
+    if (!isPolling || matchState.status === "finished") {
+      // immediate
+      doRefresh();
+
+      // 3 short retries to handle slight delays in the server's in-memory update
+      let attempts = 0;
+      const iv = setInterval(() => {
+        attempts++;
+        doRefresh();
+        if (attempts >= 3) clearInterval(iv);
+      }, 2000);
+
+      return () => clearInterval(iv);
+    }
+  }, [matchId, isPolling, matchState.status]);
+
   return {
     matchState,
     initializeMatch,

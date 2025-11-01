@@ -91,6 +91,51 @@ export async function PUT(
 
   // Update player score
   if (playerAddress && typeof score === "number") {
+    // helper: submit score to on-chain submit-score endpoint with retries
+    const submitScoreToContract = async (payload: {
+      matchId: string;
+      playerAddress: string;
+      score: number;
+    }) => {
+      const maxAttempts = 5;
+      const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const res = await fetch(`${request.nextUrl.origin}/api/contract/submit-score`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (res.ok) {
+            const j = await res.json();
+            if (j && j.success) return { success: true, json: j };
+            // If server returned not-ok but ok status, treat as success only when flagged
+            return { success: Boolean(j && j.success), json: j };
+          }
+
+          // If server indicates resource not ready, retry
+          if (res.status === 425) {
+            const j = await res.json().catch(() => ({}));
+            console.warn(
+              `⚠️ submit-score attempt ${attempt + 1} returned 425, will retry`,
+              j
+            );
+            await delay(2000);
+            continue;
+          }
+
+          // Non-retriable failure
+          const body = await res.text();
+          return { success: false, error: `Status ${res.status}: ${body}` };
+        } catch (e: any) {
+          console.error(`❌ submit-score network error on attempt ${attempt + 1}:`, e.message || e);
+          await delay(1500);
+        }
+      }
+      return { success: false, error: "Max attempts reached" };
+    };
+
     if (match.player1Score === null) {
       // First player to submit - becomes player1
       match.player1 = playerAddress;
@@ -101,19 +146,13 @@ export async function PUT(
         player1Score: match.player1Score,
         player2Score: match.player2Score,
       });
-
-      // Submit score to smart contract
+      
+      // Submit score to smart contract (with retries). If it fails, we do NOT set
+      // the match to finished nor declare a winner until it succeeds.
       try {
-        await fetch(`${request.nextUrl.origin}/api/contract/submit-score`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            matchId,
-            playerAddress,
-            score,
-          }),
-        });
-        console.log(`✅ Score submitted to smart contract for player1`);
+        const r = await submitScoreToContract({ matchId, playerAddress, score });
+        if (r.success) console.log(`✅ Score submitted to smart contract for player1`);
+        else console.warn(`⚠️ submit-score for player1 failed:`, r.error || r.json || "unknown");
       } catch (error) {
         console.error("❌ Failed to submit score to smart contract:", error);
       }
@@ -127,25 +166,23 @@ export async function PUT(
         player1Score: match.player1Score,
         player2Score: match.player2Score,
       });
-
-      // Submit score to smart contract
+      
+      // Submit score to smart contract (with retries). We will only proceed to
+      // declare a winner if this submission succeeded (and the other one did too).
+      let submit2Ok = false;
       try {
-        await fetch(`${request.nextUrl.origin}/api/contract/submit-score`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            matchId,
-            playerAddress,
-            score,
-          }),
-        });
-        console.log(`✅ Score submitted to smart contract for player2`);
+        const r = await submitScoreToContract({ matchId, playerAddress, score });
+        submit2Ok = Boolean(r.success);
+        if (submit2Ok) console.log(`✅ Score submitted to smart contract for player2`);
+        else console.warn(`⚠️ submit-score for player2 failed:`, r.error || r.json || "unknown");
       } catch (error) {
         console.error("❌ Failed to submit score to smart contract:", error);
       }
 
-      // Both scores submitted, determine winner and declare on-chain
-      if (match.player1Score !== null && match.player2Score !== null) {
+      // Both scores submitted off-chain; only declare winner if both on-chain submissions
+      // were at least attempted successfully. If the first submission didn't reach
+      // chain, we should not call declare-winner because it will timeout.
+      if (match.player1Score !== null && match.player2Score !== null && submit2Ok) {
         match.status = "finished";
 
         console.log("✅ Both scores received, marking as finished", {
@@ -174,6 +211,11 @@ export async function PUT(
                 body: JSON.stringify({
                   matchId,
                   winnerAddress: "0x0000000000000000000000000000000000000000", // Zero address for tie
+                  // include off-chain players & scores to help backend decide when on-chain
+                  offChainPlayer1: match.player1,
+                  offChainPlayer2: match.player2,
+                  offChainP1Score: match.player1Score,
+                  offChainP2Score: match.player2Score,
                 }),
               }
             );
@@ -200,6 +242,12 @@ export async function PUT(
                 body: JSON.stringify({
                   matchId,
                   winnerAddress,
+                  // pass off-chain players & scores so the backend can make
+                  // an informed decision even if one submit hasn't reflected on-chain
+                  offChainPlayer1: match.player1,
+                  offChainPlayer2: match.player2,
+                  offChainP1Score: match.player1Score,
+                  offChainP2Score: match.player2Score,
                 }),
               }
             );

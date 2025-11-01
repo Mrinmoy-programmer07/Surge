@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useResultModal } from "@/components/ui/result-modal-provider"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { generateNumberSequence, calculateScore } from "@/lib/game-utils"
@@ -79,6 +80,22 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
       finishGame(winner)
     }
   }, [gamePhase, playerScore, opponentScore, account, opponent, finishGame])
+
+  // Show result GIF modal when results are computed
+  const { showWinner, showLoser } = useResultModal()
+
+  useEffect(() => {
+    if (gamePhase === "results") {
+      if (playerScore > opponentScore) {
+        // Player won
+        showWinner()
+      } else if (opponentScore > playerScore) {
+        // Player lost
+        showLoser()
+      }
+      // Draw -> no modal (optional)
+    }
+  }, [gamePhase, playerScore, opponentScore, showWinner, showLoser])
 
   const handleNumberClick = (num: number) => {
     if (gamePhase !== "input") return

@@ -61,10 +61,14 @@ export default function AppSidebar({ account, isConnected }: AppSidebarProps) {
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         {isExpanded && (
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="flex items-center gap-2 focus:outline-none"
+            onClick={() => { window.location.href = "/"; }}
+          >
             <Image src="/surge-logo.png" alt="Surge Logo" width={32} height={32} className="w-8 h-8" />
             <span className="font-bold text-foreground">Surge</span>
-          </div>
+          </button>
         )}
         <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8 p-0">
           <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />

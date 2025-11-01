@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { GameStateProvider } from "@/lib/game-state-context"
+import { ResultModalProvider } from "@/components/ui/result-modal-provider"
 import dynamic from "next/dynamic"
 
 const WalletProvider = dynamic(
@@ -12,7 +13,9 @@ const WalletProvider = dynamic(
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WalletProvider>
-      <GameStateProvider>{children}</GameStateProvider>
+      <ResultModalProvider>
+        <GameStateProvider>{children}</GameStateProvider>
+      </ResultModalProvider>
     </WalletProvider>
   )
 }

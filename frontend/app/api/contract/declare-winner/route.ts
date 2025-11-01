@@ -73,7 +73,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { matchId, winnerAddress } = await request.json();
+    const {
+      matchId,
+      winnerAddress,
+      offChainPlayer1,
+      offChainPlayer2,
+      offChainP1Score,
+      offChainP2Score,
+    } = await request.json();
 
     if (!matchId || !winnerAddress) {
       return NextResponse.json(
@@ -150,18 +157,46 @@ export async function POST(request: NextRequest) {
           (player1Score > 0 && player2Score === 0) ||
           (player2Score > 0 && player1Score === 0);
         if (onlyOneScorePresent) {
-          const winnerIsP1 =
-            winnerAddress.toLowerCase() === matchData.player1.toLowerCase();
-          const winnerIsP2 =
-            winnerAddress.toLowerCase() === matchData.player2.toLowerCase();
+          const onChainWinnerIsP1 =
+            winnerAddress &&
+            matchData.player1 &&
+            winnerAddress.toLowerCase() === String(matchData.player1).toLowerCase();
+          const onChainWinnerIsP2 =
+            winnerAddress &&
+            matchData.player2 &&
+            winnerAddress.toLowerCase() === String(matchData.player2).toLowerCase();
 
-          const winnerHasHigher =
-            (winnerIsP1 && player1Score > player2Score) ||
-            (winnerIsP2 && player2Score > player1Score);
+          const winnerHasHigherOnChain =
+            (onChainWinnerIsP1 && player1Score > player2Score) ||
+            (onChainWinnerIsP2 && player2Score > player1Score);
 
-          if (winnerHasHigher) {
+          // Fallback: use provided off-chain players & scores to infer winner
+          let winnerHasHigherOffChain = false;
+          try {
+            if (
+              offChainPlayer1 &&
+              offChainPlayer2 &&
+              typeof offChainP1Score !== "undefined" &&
+              typeof offChainP2Score !== "undefined"
+            ) {
+              const offP1 = Number(offChainP1Score || 0);
+              const offP2 = Number(offChainP2Score || 0);
+              const offIsP1 =
+                winnerAddress.toLowerCase() ===
+                String(offChainPlayer1).toLowerCase();
+              const offIsP2 =
+                winnerAddress.toLowerCase() ===
+                String(offChainPlayer2).toLowerCase();
+              winnerHasHigherOffChain =
+                (offIsP1 && offP1 > offP2) || (offIsP2 && offP2 > offP1);
+            }
+          } catch (e) {
+            // ignore parsing errors
+          }
+
+          if (winnerHasHigherOnChain || winnerHasHigherOffChain) {
             console.log(
-              `✅ One score present and winner is higher. Proceeding. P1:${player1Score} P2:${player2Score}`
+              `✅ One score present and winner inferred (onChain: ${winnerHasHigherOnChain}, offChain: ${winnerHasHigherOffChain}). Proceeding. P1:${player1Score} P2:${player2Score}`
             );
             break;
           }
@@ -280,7 +315,7 @@ export async function POST(request: NextRequest) {
     try {
       let checks = 0;
       while (checks < 10) {
-        const after = await publicClient.readContract({
+        const after: any = await publicClient.readContract({
           address: SURGE_GAMING_ADDRESS as `0x${string}`,
           abi: SurgeGamingABI,
           functionName: "getMatch",
@@ -297,6 +332,33 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       console.warn("⚠️ Unable to confirm post-declare status, continuing", e);
+    }
+
+    // Update local match store so both clients can read final scores immediately
+    try {
+      const latestAfter: any = await publicClient.readContract({
+        address: SURGE_GAMING_ADDRESS as `0x${string}`,
+        abi: SurgeGamingABI,
+        functionName: "getMatch",
+        args: [matchId],
+      });
+
+      // Post the refreshed on-chain match to our local API so in-memory store is up-to-date
+      await fetch(`${request.nextUrl.origin}/api/matches/${matchId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          player1: String(latestAfter.player1 || "").toLowerCase(),
+          player2: String(latestAfter.player2 || "").toLowerCase(),
+          player1Score: Number(latestAfter.player1Score || 0),
+          player2Score: Number(latestAfter.player2Score || 0),
+          status: "finished",
+          winner: effectiveWinner,
+        }),
+      });
+      console.log("🔁 Local match store updated with on-chain results");
+    } catch (e) {
+      console.warn("⚠️ Failed to update local match store after declare-winner:", e);
     }
 
     return NextResponse.json({
