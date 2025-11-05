@@ -1,10 +1,10 @@
 # Surge.
 How to ccontribute 
 
-git add .
+#git add .
 
-git commit -m "any message"
+#git commit -m "any message"
 
-git push
+#git push
 
-On the terminal
+On the terminal, to contribute to your personal forked repo.
