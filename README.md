@@ -1,5 +1,5 @@
 # Surge.
-How to ccontribute 
+How to contribute 
 
 # git add .
 
