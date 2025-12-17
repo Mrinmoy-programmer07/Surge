@@ -2,29 +2,19 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAccount } from "wagmi";
-
-interface GameMessage {
-  type:
-    | "GAME_START"
-    | "TURN_CHANGE"
-    | "SCORE_UPDATE"
-    | "GAME_OVER"
-    | "ERROR"
-    | "PONG";
-  payload?: any;
-}
+import { io, Socket } from "socket.io-client";
 
 interface GameState {
   matchId: string | null;
   gameType: string | null;
-  stake: number | null;
+  stake: string | null;
   player1: string | null;
   player2: string | null;
   currentPlayer: string | null;
   player1Score: number;
   player2Score: number;
   gameData: any;
-  status: "waiting_for_ready" | "in_progress" | "finished";
+  status: "waiting_for_ready" | "in_progress" | "paused" | "finished";
   winner: string | null;
 }
 
@@ -45,136 +35,140 @@ export function useMultiplayerGame() {
 
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   const lastSeqRef = useRef<number>(0);
 
   const { address, isConnected: walletConnected } = useAccount();
 
   const connect = useCallback(() => {
-    if (
-      wsRef.current?.readyState === WebSocket.OPEN ||
-      wsRef.current?.readyState === WebSocket.CONNECTING
-    ) {
-      console.log("Game WebSocket already connected or connecting");
+    if (socketRef.current?.connected) {
+      console.log("Game Socket.io already connected");
       return;
     }
 
     try {
-      console.log("🔌 Connecting to WebSocket server for game...");
-      const ws = new WebSocket("ws://localhost:8080");
-      wsRef.current = ws;
+      console.log("🔌 Connecting to game server...");
+      const socket = io("http://localhost:8080", {
+        transports: ["websocket"],
+        autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 3000,
+      });
 
-      ws.onopen = () => {
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
         console.log("✅ Connected to game server");
         setIsConnected(true);
         setError(null);
+      });
 
-        // Start ping interval
-        if (pingIntervalRef.current) {
-          clearInterval(pingIntervalRef.current);
-        }
-        pingIntervalRef.current = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "PING" }));
-          }
-        }, 30000);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const message: GameMessage = JSON.parse(event.data);
-          handleGameMessage(message);
-        } catch (error) {
-          console.error("Error parsing game message:", error);
-        }
-      };
-
-      ws.onclose = (event) => {
-        console.log("❌ Disconnected from game server", {
-          code: event.code,
-          reason: event.reason,
-        });
+      socket.on("disconnect", (reason) => {
+        console.log("❌ Disconnected from game server:", reason);
         setIsConnected(false);
+      });
 
-        if (pingIntervalRef.current) {
-          clearInterval(pingIntervalRef.current);
-        }
+      socket.on("connect_error", (err) => {
+        console.error("Game socket connection error:", err.message);
+        setError(`Game connection error: ${err.message}`);
+      });
 
-        // Only attempt to reconnect if it wasn't a manual close and not already reconnecting
-        if (
-          event.code !== 1000 &&
-          event.code !== 1001 &&
-          !reconnectTimeoutRef.current
-        ) {
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log("🔄 Attempting to reconnect to game server...");
-            reconnectTimeoutRef.current = null;
-            connect();
-          }, 3000);
-        }
-      };
+      // Game events
+      socket.on("game_start", (payload) => {
+        console.log("🎮 Game started!", payload);
+        const seq = payload?.seq;
+        if (typeof seq === "number" && seq <= lastSeqRef.current) return;
+        if (typeof seq === "number") lastSeqRef.current = seq;
 
-      ws.onerror = (errorEvent) => {
-        // Better inspection of websocket error/events so empty objects don't hide useful info
-        try {
-          if (errorEvent instanceof Event) {
-            console.warn("Game WebSocket error event type:", errorEvent.type);
-            if ((errorEvent as any).message)
-              console.warn(
-                "Game WebSocket message:",
-                (errorEvent as any).message
-              );
-            console.warn(
-              "Game WebSocket error props:",
-              Object.getOwnPropertyNames(errorEvent)
-            );
-          } else {
-            console.warn("Game WebSocket error object:", errorEvent);
-          }
+        setGameState((prev) => ({
+          ...prev,
+          matchId: payload.matchId,
+          gameType: payload.gameType,
+          stake: payload.stake,
+          player1: payload.player1,
+          player2: payload.player2,
+          currentPlayer: payload.currentPlayer,
+          gameData: payload.gameData || {},
+          status: "in_progress",
+          player1Score: 0,
+          player2Score: 0,
+        }));
+      });
 
-          let safe = null;
-          try {
-            safe = JSON.stringify(
-              errorEvent,
-              Object.getOwnPropertyNames(errorEvent)
-            );
-          } catch (_) {}
-          if (safe) console.warn("Game WebSocket error (json):", safe);
+      socket.on("turn_change", (payload) => {
+        console.log("🔄 Turn changed:", payload);
+        const seq = payload?.seq;
+        if (typeof seq === "number" && seq <= lastSeqRef.current) return;
+        if (typeof seq === "number") lastSeqRef.current = seq;
 
-          let errorMessage = "Game connection failed";
-          const evAny = errorEvent as any;
-          if (evAny && evAny.type) errorMessage = evAny.type;
-          else if (evAny && evAny.message) errorMessage = evAny.message;
-          else if (evAny && evAny.code)
-            errorMessage = `Error code: ${evAny.code}`;
+        setGameState((prev) => ({
+          ...prev,
+          currentPlayer: payload.currentPlayer,
+          gameData: payload.gameData || prev.gameData,
+        }));
+      });
 
-          setError(`Game connection error: ${errorMessage}`);
-        } catch (e) {
-          console.warn("Failed to log game websocket error safely", e);
-        }
-      };
-    } catch (error) {
-      console.error("Failed to connect to game WebSocket:", error);
+      socket.on("score_update", (payload) => {
+        console.log("📊 Score updated:", payload);
+        const seq = payload?.seq;
+        if (typeof seq === "number" && seq <= lastSeqRef.current) return;
+        if (typeof seq === "number") lastSeqRef.current = seq;
+
+        setGameState((prev) => ({
+          ...prev,
+          player1Score: payload.player1Score,
+          player2Score: payload.player2Score,
+          gameData: payload.gameData || prev.gameData,
+        }));
+      });
+
+      socket.on("game_over", (payload) => {
+        console.log("🏁 Game over! Winner:", payload.winner);
+        setGameState((prev) => ({
+          ...prev,
+          status: "finished",
+          winner: payload.winner,
+          player1Score: payload.player1Score,
+          player2Score: payload.player2Score,
+          gameData: payload.gameData || prev.gameData,
+        }));
+      });
+
+      socket.on("opponent_disconnected", (payload) => {
+        console.log("⚠️ Opponent disconnected:", payload.message);
+        setGameState((prev) => ({
+          ...prev,
+          status: "paused",
+        }));
+      });
+
+      socket.on("game_resumed", (payload) => {
+        console.log("▶️ Game resumed:", payload);
+        setGameState((prev) => ({
+          ...prev,
+          status: "in_progress",
+          currentPlayer: payload.currentPlayer,
+          gameData: payload.gameData || prev.gameData,
+        }));
+      });
+
+      socket.on("error", (payload) => {
+        console.error("Game error:", payload.message);
+        setError(payload.message);
+      });
+
+    } catch (err) {
+      console.error("Failed to connect to game server:", err);
       setError("Failed to connect to game server");
     }
   }, []);
 
   const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
     }
-
-    if (pingIntervalRef.current) {
-      clearInterval(pingIntervalRef.current);
-    }
-
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
     setIsConnected(false);
     setGameState({
       matchId: null,
@@ -191,158 +185,62 @@ export function useMultiplayerGame() {
     });
   }, []);
 
-  const sendMessage = useCallback((type: string, payload: any) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type, payload }));
-    }
-  }, []);
-
-  const handleGameMessage = useCallback((message: GameMessage) => {
-    console.log("🎮 Received game message:", message);
-    const seq = message.payload?.seq;
-    if (typeof seq === "number") {
-      // Ignore older/out-of-order messages
-      if (seq <= lastSeqRef.current) {
-        console.log(
-          `⏱️ Ignoring out-of-order message (seq ${seq} <= last ${lastSeqRef.current})`
-        );
-        return;
-      }
-      lastSeqRef.current = seq;
-    }
-
-    switch (message.type) {
-      case "GAME_START":
-        const {
-          matchId,
-          gameType,
-          stake,
-          player1,
-          player2,
-          currentPlayer,
-          gameData,
-        } = message.payload;
-        setGameState((prev) => ({
-          ...prev,
-          matchId,
-          gameType,
-          stake,
-          player1,
-          player2,
-          currentPlayer,
-          gameData: gameData || {},
-          status: "in_progress",
-          player1Score: 0,
-          player2Score: 0,
-        }));
-        console.log("🎮 Game started!", message.payload);
-        break;
-
-      case "TURN_CHANGE":
-        setGameState((prev) => ({
-          ...prev,
-          currentPlayer: message.payload.currentPlayer,
-          gameData: message.payload.gameData || prev.gameData,
-        }));
-        console.log("🔄 Turn changed to:", message.payload.currentPlayer);
-        break;
-
-      case "SCORE_UPDATE":
-        setGameState((prev) => ({
-          ...prev,
-          player1Score: message.payload.player1Score,
-          player2Score: message.payload.player2Score,
-          gameData: message.payload.gameData || prev.gameData,
-        }));
-        console.log("📊 Score updated:", message.payload);
-        break;
-
-      case "GAME_OVER":
-        setGameState((prev) => ({
-          ...prev,
-          status: "finished",
-          winner: message.payload.winner,
-          player1Score: message.payload.player1Score,
-          player2Score: message.payload.player2Score,
-          gameData: message.payload.gameData || prev.gameData,
-        }));
-        console.log("🏁 Game over! Winner:", message.payload.winner);
-        break;
-
-      case "ERROR":
-        setError(message.payload?.message || "Unknown error");
-        break;
-
-      case "PONG":
-        // Handle ping/pong
-        break;
-    }
-  }, []);
-
   // Game actions
   const markReady = useCallback(
     (matchId: string) => {
-      if (!address) return;
-      sendMessage("GAME_READY", { matchId, playerAddress: address });
+      if (!address || !socketRef.current?.connected) return;
+      socketRef.current.emit("game_ready", { matchId, playerAddress: address });
     },
-    [address, sendMessage]
+    [address]
   );
 
   const submitTurn = useCallback(
     (matchId: string, data?: any) => {
-      if (!address) return;
-      sendMessage("GAME_ACTION", {
+      if (!address || !socketRef.current?.connected) return;
+      socketRef.current.emit("game_action", {
         matchId,
         playerAddress: address,
         action: "SUBMIT_TURN",
         data,
       });
     },
-    [address, sendMessage]
+    [address]
   );
 
   const updateScore = useCallback(
     (matchId: string, score: number, gameData?: any) => {
-      if (!address) return;
-      sendMessage("GAME_ACTION", {
+      if (!address || !socketRef.current?.connected) return;
+      socketRef.current.emit("game_action", {
         matchId,
         playerAddress: address,
         action: "UPDATE_SCORE",
         data: { score, gameData },
       });
     },
-    [address, sendMessage]
+    [address]
   );
 
   const endGame = useCallback(
     (matchId: string, winner: string, gameData?: any) => {
-      if (!address) return;
-      sendMessage("GAME_ACTION", {
+      if (!address || !socketRef.current?.connected) return;
+      socketRef.current.emit("game_action", {
         matchId,
         playerAddress: address,
         action: "GAME_OVER",
         data: { winner, gameData },
       });
     },
-    [address, sendMessage]
+    [address]
   );
 
   // Connect when wallet is connected
   useEffect(() => {
     if (walletConnected && address) {
-      // Add a small delay to ensure matchmaking WebSocket is connected first
       const timer = setTimeout(() => {
         connect();
-      }, 1000);
+      }, 500);
 
-      return () => {
-        clearTimeout(timer);
-        // Don't disconnect on unmount to preserve connection during navigation/HMR
-        // Only clear timers
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-        }
-      };
+      return () => clearTimeout(timer);
     } else {
       disconnect();
     }

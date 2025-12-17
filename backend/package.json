@@ -3,9 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "node websocket-server.js"
+    "dev": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "start:old": "node websocket-server.js"
   },
   "dependencies": {
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "socket.io": "^4.8.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
