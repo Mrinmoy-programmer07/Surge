@@ -13,7 +13,7 @@ type MatchFoundPayload = {
   gameStartTime: number;
 };
 
-export function useWebSocketMatchmaking(gameType: string, stake: string) {
+export function useWebSocketMatchmaking(gameType: string, stake: string, providedMatchId?: string) {
   const [opponent, setOpponent] = useState<string | null>(null);
   const [matchId, setMatchId] = useState<string | null>(null);
   const [gameStartTime, setGameStartTime] = useState<number | null>(null);

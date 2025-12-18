@@ -18,7 +18,7 @@ export default function Home() {
     // Ensure on-chain connector is actually disconnected
     try {
       disconnect()
-    } catch {}
+    } catch { }
     setAccount(null)
     setIsConnected(false)
   }
@@ -54,7 +54,7 @@ export default function Home() {
               <Card className="w-full max-w-md p-8 text-center border-border">
                 <h2 className="text-2xl font-bold mb-4 text-foreground">Connect Your Wallet</h2>
                 <p className="text-muted-foreground mb-6">
-                  Connect your Celo wallet to start competing in skill-based challenges
+                  Connect your wallet to start competing in skill-based challenges on Arbitrum
                 </p>
                 <WalletConnect onConnect={setAccount} onConnected={setIsConnected} />
               </Card>

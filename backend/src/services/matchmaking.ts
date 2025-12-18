@@ -178,7 +178,7 @@ export class MatchmakingManager {
         console.log(`✅ Refund processed for tx: ${txSignature.slice(0, 8)}...`);
     }
 
-    private tryMatchPlayers(queueKey: string) {
+    private async tryMatchPlayers(queueKey: string) {
         const queue = this.queues.get(queueKey);
         if (!queue || queue.length < 2) return;
 
@@ -209,6 +209,20 @@ export class MatchmakingManager {
             matchId,
             gameStartTime,
         };
+
+        // Call smart contract to create match from deposits
+        try {
+            const { contractService } = await import('./contract');
+            await contractService.createMatchFromDeposits(
+                matchId,
+                player1.txSignature,
+                player2.txSignature
+            );
+            console.log(`✅ Match created on-chain: ${matchId}`);
+        } catch (error: any) {
+            console.error(`❌ Failed to create match on-chain:`, error.message);
+            // Continue anyway - match can still be played
+        }
 
         // Send match notification to both players
         const socket1 = this.io.sockets.sockets.get(player1.socketId);

@@ -30,13 +30,13 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawn, setWithdrawn] = useState(false)
   const [withdrawTxHash, setWithdrawTxHash] = useState<string | null>(null)
-  
+
   const { withdraw, isWithdrawing, withdrawSuccess, withdrawHash, withdrawDraw, isWithdrawingDraw, withdrawDrawSuccess, withdrawDrawHash } = useSurgeContract()
 
-  const { 
-    matchState, 
+  const {
+    matchState,
     initializeMatch,
-    submitScore: apiSubmitScore, 
+    submitScore: apiSubmitScore,
     submitWinner,
     error: apiError
   } = useMatchApi(matchId, account)
@@ -46,7 +46,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
     const scrambled = [...seq]
     for (let i = scrambled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[scrambled[i], scrambled[j]] = [scrambled[j], scrambled[i]]
+        ;[scrambled[i], scrambled[j]] = [scrambled[j], scrambled[i]]
     }
     return scrambled
   }
@@ -54,28 +54,28 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
   // Handle withdrawal
   const handleWithdraw = async (isDraw: boolean = false) => {
     if (withdrawing || withdrawn || isWithdrawing || isWithdrawingDraw) return
-    
+
     setWithdrawing(true)
-    
+
     try {
       console.log('💰 Initiating smart contract withdrawal for match:', matchId, 'isDraw:', isDraw)
-      
+
       // Call the appropriate withdraw function
       if (isDraw) {
         withdrawDraw(matchId)
       } else {
         withdraw(matchId)
       }
-      
+
       console.log('✅ Withdrawal transaction submitted to blockchain')
-      
+
     } catch (error) {
       console.error('❌ Withdrawal error:', error)
       alert('Withdrawal failed: ' + (error instanceof Error ? error.message : 'Unknown error'))
       setWithdrawing(false)
     }
   }
-  
+
   // Monitor withdrawal transaction status (normal win)
   useEffect(() => {
     if (withdrawSuccess && withdrawHash) {
@@ -83,7 +83,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
       setWithdrawn(true)
       setWithdrawTxHash(withdrawHash)
       setWithdrawing(false)
-      
+
       // Optional: Record withdrawal in backend for tracking
       fetch('/api/withdraw', {
         method: 'POST',
@@ -99,7 +99,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
       }).catch(err => console.warn('Failed to record withdrawal in backend:', err))
     }
   }, [withdrawSuccess, withdrawHash, matchId, account, stake])
-  
+
   // Monitor withdrawal transaction status (draw)
   useEffect(() => {
     if (withdrawDrawSuccess && withdrawDrawHash) {
@@ -107,7 +107,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
       setWithdrawn(true)
       setWithdrawTxHash(withdrawDrawHash)
       setWithdrawing(false)
-      
+
       // Optional: Record withdrawal in backend for tracking
       fetch('/api/withdraw', {
         method: 'POST',
@@ -129,7 +129,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
     const newSequence = generateNumberSequence(5)
     setSequence(newSequence)
     setScrambledInputs(scrambleSequence(newSequence))
-    
+
     // Initialize match in API
     initializeMatch(account, opponent, { sequence: newSequence })
   }, [matchId, account, opponent, initializeMatch])
@@ -180,20 +180,20 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
       // Wrong answer - calculate score based on how far they got
       const score = calculateScore(sequence, newInput)
       setMyFinalScore(score)
-      
+
       // Send my score to API
       apiSubmitScore(score)
-      
+
       setPlayerInput([])
       setWaitingForOpponent(true)
     } else if (newInput.length === sequence.length) {
       // Correct full sequence - perfect score
       const score = sequence.length
       setMyFinalScore(score)
-      
+
       // Send my score to API
       apiSubmitScore(score)
-      
+
       setPlayerInput([])
       setWaitingForOpponent(true)
     }
@@ -203,13 +203,13 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
   const isPlayer1 = matchState.player1 === account
   const player1Score = isPlayer1 ? matchState.player1Score : matchState.player2Score
   const player2Score = isPlayer1 ? matchState.player2Score : matchState.player1Score
-  
+
   // Track scores from match state updates (from API polling)
   useEffect(() => {
     if (matchState.matchId === matchId) {
       // Update opponent's score when it comes from API
       const opponentScore = isPlayer1 ? matchState.player2Score : matchState.player1Score
-      
+
       console.log('📊 Score tracking effect:', {
         isPlayer1,
         'matchState.player1Score': matchState.player1Score,
@@ -222,32 +222,32 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
         'opponentFinalScore === null': opponentFinalScore === null,
         'myFinalScore !== null': myFinalScore !== null
       })
-      
+
       // Set opponent score if API has sent it and we haven't captured it yet
       if (opponentScore !== null && typeof opponentScore === 'number' && opponentScore >= 0 && opponentFinalScore === null) {
         console.log('✅ Setting opponent final score to:', opponentScore)
         setOpponentFinalScore(opponentScore)
       }
-      
+
       // If both scores are set, determine winner but keep waiting phase for 5 seconds
       if (myFinalScore !== null && opponentFinalScore !== null && waitingForOpponent && !winnerSubmittedRef.current) {
         console.log('🏁 Both scores available, determining winner...', {
           myFinalScore,
           opponentFinalScore
         })
-        
+
         // Determine winner and submit to API only once
-        const winner = myFinalScore > opponentFinalScore ? account : 
-                       opponentFinalScore > myFinalScore ? opponent : 
-                       account // draw - default to account
-        
+        const winner = myFinalScore > opponentFinalScore ? account :
+          opponentFinalScore > myFinalScore ? opponent :
+            account // draw - default to account
+
         console.log('📤 Calling submitWinner with winner:', winner)
         submitWinner(winner)
         winnerSubmittedRef.current = true
       }
     }
   }, [matchState.player1Score, matchState.player2Score, matchState.matchId, matchState.status, matchId, myFinalScore, opponentFinalScore, isPlayer1, account, opponent, submitWinner, waitingForOpponent])
-  
+
   // 5-second countdown timer for waiting phase
   useEffect(() => {
     if (waitingForOpponent && myFinalScore !== null && opponentFinalScore !== null) {
@@ -263,7 +263,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
       }
     }
   }, [waitingForOpponent, waitingTimer, myFinalScore, opponentFinalScore])
-  
+
   // Debug logging
   console.log('🎮 Game State Debug:', {
     matchId,
@@ -303,7 +303,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
     const isWinner = winnerAddress === account
     const isDraw = myFinalScore === opponentFinalScore
     const winnerText = isDraw ? "It's a Draw!" : isWinner ? "You Win! 🎉" : "Opponent Wins!"
-    
+
     // Calculate winnings: 75% of total pot (2x stake)
     const totalPot = parseFloat(stake) * 2
     const platformFee = totalPot * 0.25 // 25% platform fee
@@ -329,21 +329,21 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
                 <p className="text-3xl font-bold text-secondary">{opponentFinalScore ?? 0}</p>
               </div>
             </div>
-            
+
             {/* Winnings Display */}
             {isWinner && !isDraw && (
               <div className="mb-6 p-4 bg-green-100 dark:bg-green-900/20 rounded-lg border-2 border-green-500">
                 <p className="text-lg font-semibold text-green-800 dark:text-green-400 mb-3">
-                  💰 You Won {formattedPayout} CELO!
+                  💰 You Won {formattedPayout} ETH!
                 </p>
                 <div className="text-sm text-green-700 dark:text-green-500 space-y-1">
-                  <p>Total Pot: {stake} + {stake} = {totalPot.toFixed(4)} CELO</p>
-                  <p>Platform Fee (25%): {formattedFee} CELO</p>
-                  <p className="font-bold text-base">Your Payout (75%): {formattedPayout} CELO</p>
+                  <p>Total Pot: {stake} + {stake} = {totalPot.toFixed(4)} ETH</p>
+                  <p>Platform Fee (25%): {formattedFee} ETH</p>
+                  <p className="font-bold text-base">Your Payout (75%): {formattedPayout} ETH</p>
                 </div>
               </div>
             )}
-            
+
             <div className="text-sm text-muted-foreground mb-8">
               <p>Match ID: {matchId}</p>
               <p>Game Status: {matchState.status}</p>
@@ -353,37 +353,37 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
                 </p>
               )}
             </div>
-            
+
             <div className="flex flex-col gap-3 items-center">
               {/* Withdraw Button - For winner */}
               {isWinner && !isDraw && !withdrawn && (
-                <Button 
-                  onClick={() => handleWithdraw(false)} 
+                <Button
+                  onClick={() => handleWithdraw(false)}
                   disabled={withdrawing || isWithdrawing}
                   className="px-8 py-4 text-lg bg-green-600 hover:bg-green-700 text-white"
                 >
-                  {(withdrawing || isWithdrawing) ? 'Confirming Transaction...' : `Withdraw ${formattedPayout} CELO`}
+                  {(withdrawing || isWithdrawing) ? 'Confirming Transaction...' : `Withdraw ${formattedPayout} ETH`}
                 </Button>
               )}
-              
+
               {/* Withdraw Button - For draw (both players can withdraw) */}
               {isDraw && !withdrawn && (
-                <Button 
-                  onClick={() => handleWithdraw(true)} 
+                <Button
+                  onClick={() => handleWithdraw(true)}
                   disabled={withdrawing || isWithdrawingDraw}
                   className="px-8 py-4 text-lg bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  {(withdrawing || isWithdrawingDraw) ? 'Confirming Transaction...' : `Withdraw Stake (${stake} CELO)`}
+                  {(withdrawing || isWithdrawingDraw) ? 'Confirming Transaction...' : `Withdraw Stake (${stake} ETH)`}
                 </Button>
               )}
-              
+
               {/* Already Withdrawn Message */}
               {withdrawn && (
                 <div className="text-green-600 dark:text-green-400 font-semibold">
-                  ✅ Successfully Withdrawn {isDraw ? stake : formattedPayout} CELO!
+                  ✅ Successfully Withdrawn {isDraw ? stake : formattedPayout} ETH!
                   {withdrawTxHash && (
                     <div className="text-xs mt-1">
-                      <a 
+                      <a
                         href={`https://sepolia.celoscan.io/tx/${withdrawTxHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -395,10 +395,10 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
                   )}
                 </div>
               )}
-              
+
               {/* Play Again Button */}
-              <Button 
-                onClick={() => window.location.reload()} 
+              <Button
+                onClick={() => window.location.reload()}
                 className="px-8 py-4 text-lg"
                 variant="outline"
               >
@@ -413,7 +413,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
 
   if (waitingForOpponent) {
     const bothScoresReady = myFinalScore !== null && opponentFinalScore !== null
-    
+
     return (
       <div className="min-h-screen bg-linear-to-br from-background via-card to-background py-8">
         <div className="container mx-auto px-4">
@@ -439,8 +439,8 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              {bothScoresReady 
-                ? `Calculating winner...` 
+              {bothScoresReady
+                ? `Calculating winner...`
                 : "Waiting for opponent to finish their turn..."}
             </p>
           </Card>
@@ -480,9 +480,8 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
                 {sequence.map((_, index) => (
                   <div
                     key={index}
-                    className={`w-2 h-2 rounded-full ${
-                      index <= displayIndex ? 'bg-primary' : 'bg-muted-foreground/30'
-                    }`}
+                    className={`w-2 h-2 rounded-full ${index <= displayIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+                      }`}
                   />
                 ))}
               </div>
@@ -498,7 +497,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
               <p className="text-sm text-muted-foreground mb-4">
                 Click the numbers in the correct order from memory
               </p>
-              
+
               {/* Number Grid */}
               <div className="grid grid-cols-5 gap-4 max-w-md mx-auto mb-4">
                 {scrambledInputs.map((num, index) => (
@@ -544,12 +543,10 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
 
           {/* Connection Status */}
           <div className="text-center text-sm text-muted-foreground">
-            <div className={`inline-flex items-center px-3 py-1 rounded-full ${
-              matchState.status === 'in_progress' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              <div className={`w-2 h-2 rounded-full mr-2 ${
-                matchState.status === 'in_progress' ? 'bg-green-500' : 'bg-yellow-500'
-              }`}></div>
+            <div className={`inline-flex items-center px-3 py-1 rounded-full ${matchState.status === 'in_progress' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+              }`}>
+              <div className={`w-2 h-2 rounded-full mr-2 ${matchState.status === 'in_progress' ? 'bg-green-500' : 'bg-yellow-500'
+                }`}></div>
               {matchState.status === 'in_progress' ? 'Active' : 'Waiting'}
             </div>
             {isMyTurn && gamePhase === "input" && (

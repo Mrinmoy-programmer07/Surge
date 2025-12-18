@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title SurgeGaming
- * @dev Decentralized gaming platform for skill-based games with real money stakes
- * @notice Players deposit CELO, winner gets 75%, platform gets 25%
+ * @dev Decentralized gaming platform with escrow for pay-before-queue
+ * @notice Players deposit ETH to escrow, winner gets 75%, platform gets 25%
  */
 contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
     // ============ State Variables ============
@@ -20,8 +20,8 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
     /// @notice Backend oracle address that can submit scores
     address public backendOracle;
 
-    /// @notice Minimum stake amount (0.1 CELO)
-    uint256 public constant MIN_STAKE = 0.1 ether;
+    /// @notice Minimum stake amount (0.0001 ETH)
+    uint256 public constant MIN_STAKE = 0.0001 ether;
 
     /// @notice Match timeout duration (5 minutes)
     uint256 public constant MATCH_TIMEOUT = 5 minutes;
@@ -35,28 +35,36 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
     // ============ Enums ============
 
     enum MatchStatus {
-        Pending, // Waiting for second player
-        Active, // Both players joined, game in progress
-        Completed, // Game finished, winner declared
-        Cancelled, // Timeout or cancelled
-        Draw // Game ended in a draw
+        Pending,
+        Active,
+        Completed,
+        Cancelled,
+        Draw
     }
 
     // ============ Structs ============
 
     struct Match {
-        string matchId; // Unique match identifier
-        address player1; // First player address
-        address player2; // Second player address (null if pending)
-        uint256 stake; // Stake amount per player
-        uint8 player1Score; // Player 1's game score
-        uint8 player2Score; // Player 2's game score
-        address winner; // Winner address (null until declared)
-        MatchStatus status; // Current match status
-        uint256 createdAt; // Match creation timestamp
-        uint256 expiresAt; // Match expiration timestamp
-        bool player1Withdrawn; // Whether player1 has withdrawn
-        bool player2Withdrawn; // Whether player2 has withdrawn
+        string matchId;
+        address player1;
+        address player2;
+        uint256 stake;
+        uint8 player1Score;
+        uint8 player2Score;
+        address winner;
+        MatchStatus status;
+        uint256 createdAt;
+        uint256 expiresAt;
+        bool player1Withdrawn;
+        bool player2Withdrawn;
+    }
+
+    struct Deposit {
+        address player;
+        uint256 amount;
+        uint256 depositedAt;
+        bool refunded;
+        string matchId; // Empty if not yet matched
     }
 
     // ============ Storage ============
@@ -67,7 +75,13 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
     /// @notice Track if a matchId exists
     mapping(string => bool) public matchExists;
 
-    /// @notice Player stats: address => (wins, losses, totalEarnings)
+    /// @notice Player deposits: depositId => Deposit
+    mapping(string => Deposit) public deposits;
+
+    /// @notice Track if a depositId exists
+    mapping(string => bool) public depositExists;
+
+    /// @notice Player stats
     mapping(address => PlayerStats) public playerStats;
 
     struct PlayerStats {
@@ -79,17 +93,25 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
 
     // ============ Events ============
 
+    event StakeDeposited(
+        string indexed depositId,
+        address indexed player,
+        uint256 amount,
+        uint256 depositedAt
+    );
+
+    event StakeRefunded(
+        string indexed depositId,
+        address indexed player,
+        uint256 amount
+    );
+
     event MatchCreated(
         string indexed matchId,
         address indexed player1,
+        address indexed player2,
         uint256 stake,
         uint256 createdAt
-    );
-
-    event MatchJoined(
-        string indexed matchId,
-        address indexed player2,
-        uint256 totalPot
     );
 
     event ScoreSubmitted(
@@ -106,13 +128,6 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
     );
 
     event DrawDeclared(string indexed matchId, uint256 refundPerPlayer);
-
-    event MatchCancelled(
-        string indexed matchId,
-        address indexed player,
-        uint256 refundAmount,
-        string reason
-    );
 
     event Withdrawal(
         string indexed matchId,
@@ -144,14 +159,6 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
         _;
     }
 
-    modifier matchNotExpired(string memory matchId) {
-        require(
-            block.timestamp <= matches[matchId].expiresAt,
-            "Match has expired"
-        );
-        _;
-    }
-
     // ============ Constructor ============
 
     constructor(address _backendOracle) Ownable(msg.sender) {
@@ -159,28 +166,93 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
         backendOracle = _backendOracle;
     }
 
-    // ============ Match Creation & Joining ============
+    // ============ Escrow Functions ============
 
     /**
-     * @notice Create a new match with stake deposit
-     * @param matchId Unique identifier for the match
+     * @notice Deposit stake to escrow before joining queue
+     * @param depositId Unique identifier for this deposit
      */
-    function createMatch(
-        string memory matchId
+    function depositStake(
+        string memory depositId
     ) external payable whenNotPaused nonReentrant {
-        require(!matchExists[matchId], "Match already exists");
+        require(!depositExists[depositId], "Deposit already exists");
         require(msg.value >= MIN_STAKE, "Stake below minimum");
         require(msg.value > 0, "Must send stake");
 
+        deposits[depositId] = Deposit({
+            player: msg.sender,
+            amount: msg.value,
+            depositedAt: block.timestamp,
+            refunded: false,
+            matchId: ""
+        });
+
+        depositExists[depositId] = true;
+        playerStats[msg.sender].totalStaked += msg.value;
+
+        emit StakeDeposited(depositId, msg.sender, msg.value, block.timestamp);
+    }
+
+    /**
+     * @notice Refund stake if player cancels or no match found
+     * @param depositId Deposit identifier
+     */
+    function refundStake(
+        string memory depositId
+    ) external nonReentrant {
+        require(depositExists[depositId], "Deposit does not exist");
+        Deposit storage deposit = deposits[depositId];
+        
+        require(deposit.player == msg.sender, "Not your deposit");
+        require(!deposit.refunded, "Already refunded");
+        require(bytes(deposit.matchId).length == 0, "Already in match");
+
+        deposit.refunded = true;
+        playerStats[msg.sender].totalStaked -= deposit.amount;
+
+        (bool success, ) = payable(msg.sender).call{value: deposit.amount}("");
+        require(success, "Refund failed");
+
+        emit StakeRefunded(depositId, msg.sender, deposit.amount);
+    }
+
+    /**
+     * @notice Create match from two deposits (called by backend)
+     * @param matchId Match identifier
+     * @param depositId1 First player's deposit
+     * @param depositId2 Second player's deposit
+     */
+    function createMatchFromDeposits(
+        string memory matchId,
+        string memory depositId1,
+        string memory depositId2
+    ) external onlyBackend nonReentrant {
+        require(!matchExists[matchId], "Match already exists");
+        require(depositExists[depositId1], "Deposit 1 does not exist");
+        require(depositExists[depositId2], "Deposit 2 does not exist");
+
+        Deposit storage deposit1 = deposits[depositId1];
+        Deposit storage deposit2 = deposits[depositId2];
+
+        require(!deposit1.refunded, "Deposit 1 refunded");
+        require(!deposit2.refunded, "Deposit 2 refunded");
+        require(deposit1.amount == deposit2.amount, "Stakes must match");
+        require(bytes(deposit1.matchId).length == 0, "Deposit 1 already in match");
+        require(bytes(deposit2.matchId).length == 0, "Deposit 2 already in match");
+
+        // Link deposits to match
+        deposit1.matchId = matchId;
+        deposit2.matchId = matchId;
+
         matches[matchId] = Match({
             matchId: matchId,
-            player1: msg.sender,
-            player2: address(0),
-            stake: msg.value,
+            player1: deposit1.player,
+            player2: deposit2.player,
+            stake: deposit1.amount,
             player1Score: 0,
             player2Score: 0,
             winner: address(0),
-            status: MatchStatus.Pending,
+            status: MatchStatus.Active,
             createdAt: block.timestamp,
             expiresAt: block.timestamp + MATCH_TIMEOUT,
             player1Withdrawn: false,
@@ -189,54 +261,11 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
 
         matchExists[matchId] = true;
 
-        playerStats[msg.sender].totalStaked += msg.value;
-
-        emit MatchCreated(matchId, msg.sender, msg.value, block.timestamp);
-    }
-
-    /**
-     * @notice Join an existing pending match
-     * @param matchId Match identifier to join
-     */
-    function joinMatch(
-        string memory matchId
-    )
-        external
-        payable
-        whenNotPaused
-        nonReentrant
-        matchMustExist(matchId)
-        matchNotExpired(matchId)
-    {
-        Match storage matchData = matches[matchId];
-
-        require(matchData.status == MatchStatus.Pending, "Match not available");
-        require(matchData.player2 == address(0), "Match already full");
-        require(
-            msg.sender != matchData.player1,
-            "Cannot play against yourself"
-        );
-        require(msg.value == matchData.stake, "Stake must match");
-
-        matchData.player2 = msg.sender;
-        matchData.status = MatchStatus.Active;
-        matchData.expiresAt = block.timestamp + MATCH_TIMEOUT; // Reset timeout
-
-        playerStats[msg.sender].totalStaked += msg.value;
-
-        uint256 totalPot = matchData.stake * 2;
-
-        emit MatchJoined(matchId, msg.sender, totalPot);
+        emit MatchCreated(matchId, deposit1.player, deposit2.player, deposit1.amount, block.timestamp);
     }
 
     // ============ Score Submission (Backend Only) ============
 
-    /**
-     * @notice Submit player score (called by backend oracle)
-     * @param matchId Match identifier
-     * @param player Player address
-     * @param score Player's game score
-     */
     function submitScore(
         string memory matchId,
         address player,
@@ -261,11 +290,6 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
         emit ScoreSubmitted(matchId, player, score);
     }
 
-    /**
-     * @notice Declare winner after both scores submitted (called by backend)
-     * @param matchId Match identifier
-     * @param winner Winner's address (address(0) for draw)
-     */
     function declareWinner(
         string memory matchId,
         address winner
@@ -282,7 +306,6 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
         uint256 platformFee;
         uint256 payout;
 
-        // Check for draw
         if (matchData.player1Score == matchData.player2Score) {
             require(
                 winner == address(0),
@@ -310,12 +333,9 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
             matchData.winner = winner;
             matchData.status = MatchStatus.Completed;
 
-            // Normal win: 75% to winner, 25% to platform
-            // Platform fee will be transferred when winner withdraws
             platformFee = (totalPot * PLATFORM_FEE_PERCENT) / 100;
             payout = totalPot - platformFee;
 
-            // Update stats
             address loser = (winner == matchData.player1)
                 ? matchData.player2
                 : matchData.player1;
@@ -329,10 +349,6 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
 
     // ============ Withdrawals ============
 
-    /**
-     * @notice Winner withdraws their payout
-     * @param matchId Match identifier
-     */
     function withdraw(
         string memory matchId
     ) external nonReentrant matchMustExist(matchId) {
@@ -355,13 +371,11 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
         uint256 platformFee = (totalPot * PLATFORM_FEE_PERCENT) / 100;
         uint256 payout = totalPot - platformFee;
 
-        // Transfer platform fee directly to platform wallet
         (bool feeSuccess, ) = payable(PLATFORM_WALLET).call{value: platformFee}(
             ""
         );
         require(feeSuccess, "Platform fee transfer failed");
 
-        // Transfer payout to winner
         (bool payoutSuccess, ) = payable(msg.sender).call{value: payout}("");
         require(payoutSuccess, "Winner payout transfer failed");
 
@@ -369,10 +383,6 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
         emit PlatformFeesWithdrawn(PLATFORM_WALLET, platformFee);
     }
 
-    /**
-     * @notice Withdraw in case of draw (each player withdraws their stake)
-     * @param matchId Match identifier
-     */
     function withdrawDraw(
         string memory matchId
     ) external nonReentrant matchMustExist(matchId) {
@@ -394,120 +404,14 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
             matchData.player2Withdrawn = true;
         }
 
-        // Each player gets their stake back
         (bool success, ) = payable(msg.sender).call{value: matchData.stake}("");
         require(success, "Transfer failed");
 
         emit Withdrawal(matchId, msg.sender, matchData.stake);
     }
 
-    // ============ Timeout & Cancellation ============
-
-    /**
-     * @notice Cancel match if second player never joins (timeout)
-     * @param matchId Match identifier
-     */
-    function cancelPendingMatch(
-        string memory matchId
-    ) external nonReentrant matchMustExist(matchId) {
-        Match storage matchData = matches[matchId];
-
-        require(matchData.status == MatchStatus.Pending, "Match not pending");
-        require(block.timestamp > matchData.expiresAt, "Match not expired yet");
-        require(msg.sender == matchData.player1, "Only player1 can cancel");
-
-        matchData.status = MatchStatus.Cancelled;
-
-        uint256 refund = matchData.stake;
-        playerStats[matchData.player1].totalStaked -= refund;
-
-        (bool success, ) = payable(matchData.player1).call{value: refund}("");
-        require(success, "Refund failed");
-
-        emit MatchCancelled(
-            matchId,
-            matchData.player1,
-            refund,
-            "Timeout - no opponent"
-        );
-    }
-
-    /**
-     * @notice Declare winner by timeout if opponent doesn't submit score
-     * @param matchId Match identifier
-     */
-    function claimWinByTimeout(
-        string memory matchId
-    ) external nonReentrant matchMustExist(matchId) {
-        Match storage matchData = matches[matchId];
-
-        require(matchData.status == MatchStatus.Active, "Match not active");
-        require(block.timestamp > matchData.expiresAt, "Match not expired yet");
-        require(
-            msg.sender == matchData.player1 || msg.sender == matchData.player2,
-            "Not a player"
-        );
-
-        // Determine winner: whoever submitted a score wins
-        address winner;
-        if (matchData.player1Score > 0 && matchData.player2Score == 0) {
-            winner = matchData.player1;
-        } else if (matchData.player2Score > 0 && matchData.player1Score == 0) {
-            winner = matchData.player2;
-        } else if (matchData.player1Score == 0 && matchData.player2Score == 0) {
-            // If neither submitted, caller wins by default
-            winner = msg.sender;
-        } else {
-            // Both submitted - shouldn't reach here, backend should have called declareWinner
-            revert("Both scores submitted, backend should declare winner");
-        }
-
-        matchData.winner = winner;
-        matchData.status = MatchStatus.Completed;
-
-        uint256 totalPot = matchData.stake * 2;
-        uint256 platformFee = (totalPot * PLATFORM_FEE_PERCENT) / 100;
-        uint256 winnerPayout = totalPot - platformFee;
-
-        // Don't accumulate fees - they'll be transferred when winner calls withdraw()
-
-        address loser = (winner == matchData.player1)
-            ? matchData.player2
-            : matchData.player1;
-        playerStats[winner].wins += 1;
-        playerStats[winner].totalEarnings += winnerPayout;
-        playerStats[loser].losses += 1;
-
-        emit WinnerDeclared(matchId, winner, winnerPayout, platformFee);
-    }
-
-    // ============ Platform Fee Management ============
-
-    /**
-     * @notice Platform withdraws accumulated fees
-     */
-    function withdrawPlatformFees() external nonReentrant {
-        require(
-            msg.sender == PLATFORM_WALLET || msg.sender == owner(),
-            "Not authorized"
-        );
-        require(accumulatedFees > 0, "No fees to withdraw");
-
-        uint256 amount = accumulatedFees;
-        accumulatedFees = 0;
-
-        (bool success, ) = payable(PLATFORM_WALLET).call{value: amount}("");
-        require(success, "Fee transfer failed");
-
-        emit PlatformFeesWithdrawn(PLATFORM_WALLET, amount);
-    }
-
     // ============ Admin Functions ============
 
-    /**
-     * @notice Update backend oracle address
-     * @param newOracle New backend oracle address
-     */
     function setBackendOracle(address newOracle) external onlyOwner {
         require(newOracle != address(0), "Invalid address");
         address oldOracle = backendOracle;
@@ -515,26 +419,16 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
         emit BackendOracleUpdated(oldOracle, newOracle);
     }
 
-    /**
-     * @notice Pause contract (emergency)
-     */
     function pause() external onlyOwner {
         _pause();
     }
 
-    /**
-     * @notice Unpause contract
-     */
     function unpause() external onlyOwner {
         _unpause();
     }
 
     // ============ View Functions ============
 
-    /**
-     * @notice Get match details
-     * @param matchId Match identifier
-     */
     function getMatch(
         string memory matchId
     ) external view returns (Match memory) {
@@ -542,36 +436,25 @@ contract SurgeGaming is ReentrancyGuard, Pausable, Ownable {
         return matches[matchId];
     }
 
-    /**
-     * @notice Get player statistics
-     * @param player Player address
-     */
+    function getDeposit(
+        string memory depositId
+    ) external view returns (Deposit memory) {
+        require(depositExists[depositId], "Deposit does not exist");
+        return deposits[depositId];
+    }
+
     function getPlayerStats(
         address player
     ) external view returns (PlayerStats memory) {
         return playerStats[player];
     }
 
-    /**
-     * @notice Calculate potential payout for a stake amount
-     * @param stakeAmount Stake amount
-     */
     function calculatePayout(
         uint256 stakeAmount
     ) external pure returns (uint256 winnerPayout, uint256 platformFee) {
         uint256 totalPot = stakeAmount * 2;
         platformFee = (totalPot * PLATFORM_FEE_PERCENT) / 100;
         winnerPayout = totalPot - platformFee;
-    }
-
-    /**
-     * @notice Check if match has expired
-     * @param matchId Match identifier
-     */
-    function isMatchExpired(
-        string memory matchId
-    ) external view matchMustExist(matchId) returns (bool) {
-        return block.timestamp > matches[matchId].expiresAt;
     }
 
     // ============ Receive & Fallback ============

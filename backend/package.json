@@ -9,6 +9,7 @@
     "start:old": "node websocket-server.js"
   },
   "dependencies": {
+    "ethers": "^6.16.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {

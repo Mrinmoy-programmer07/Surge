@@ -13,10 +13,11 @@ interface WaitingRoomProps {
   gameType: GameType
   stake: string
   account: string
+  matchId: string
   onGameStart: (opponent: string, matchId: string) => void
 }
 
-export default function WaitingRoom({ gameType, stake, account, onGameStart }: WaitingRoomProps) {
+export default function WaitingRoom({ gameType, stake, account, matchId, onGameStart }: WaitingRoomProps) {
   const [countdown, setCountdown] = useState(3)
   const gameStartedRef = useRef(false)
   const { toast } = useToast()
@@ -31,7 +32,7 @@ export default function WaitingRoom({ gameType, stake, account, onGameStart }: W
     address,
     isMatchCreator,
     leaveQueue
-  } = useWebSocketMatchmaking(gameType, stake)
+  } = useWebSocketMatchmaking(gameType, stake, matchId)
   const {
     gameState,
     isConnected: gameConnected,
@@ -147,13 +148,14 @@ export default function WaitingRoom({ gameType, stake, account, onGameStart }: W
             </div>
             <p className="font-mono text-sm text-primary mb-2">{formatAddress(address)}</p>
             <p className="text-xs text-muted-foreground">You</p>
+            <p className="text-xs text-green-600 mt-1">✓ Stake Paid</p>
           </div>
 
           {/* VS */}
           <div className="flex items-center justify-center">
             <div className="text-center">
               <p className="text-2xl font-bold text-muted-foreground mb-2">VS</p>
-              <p className="text-xs text-muted-foreground">Stake: {stake} SOL</p>
+              <p className="text-xs text-muted-foreground">Stake: {stake} ETH</p>
             </div>
           </div>
 

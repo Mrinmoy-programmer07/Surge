@@ -12,11 +12,11 @@ interface StakeSelectorProps {
   onBack: () => void
 }
 
-const PRESET_STAKES = ["0.1", "0.5", "1", "2"]
+const PRESET_STAKES = ["0.0001", "0.0005", "0.001", "0.005"]
 
 export default function StakeSelector({ game, onConfirm, onBack }: StakeSelectorProps) {
   const [customStake, setCustomStake] = useState<string>("")
-  const [selectedStake, setSelectedStake] = useState<string>("1")
+  const [selectedStake, setSelectedStake] = useState<string>("0.0001")
 
   const handleConfirm = () => {
     const stake = customStake || selectedStake
@@ -27,7 +27,7 @@ export default function StakeSelector({ game, onConfirm, onBack }: StakeSelector
     <div className="flex items-center justify-center min-h-[60vh]">
       <Card className="w-full max-w-md p-8 border-border">
         <h2 className="text-2xl font-bold mb-2 text-foreground">Set Your Stake</h2>
-        <p className="text-muted-foreground mb-6">Choose how much CELO you want to wager (minimum 0.1 CELO)</p>
+        <p className="text-muted-foreground mb-6">Choose how much ETH you want to wager (minimum 0.0001 ETH)</p>
 
         {/* Preset Stakes */}
         <div className="grid grid-cols-2 gap-3 mb-6">
@@ -43,7 +43,7 @@ export default function StakeSelector({ game, onConfirm, onBack }: StakeSelector
                 selectedStake === stake && !customStake ? "bg-primary text-primary-foreground" : "border-border"
               }
             >
-              {stake} CELO
+              {stake} ETH
             </Button>
           ))}
         </div>

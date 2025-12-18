@@ -10,7 +10,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Surge - Web3 Gaming Platform",
-  description: "1v1 skill-based challenges on Celo blockchain",
+  description: "1v1 skill-based challenges on Arbitrum blockchain",
   generator: "v0.app",
 }
 

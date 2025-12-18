@@ -6,7 +6,8 @@ import {
   useBalance,
 } from "wagmi";
 import { parseEther } from "viem";
-import SurgeGamingABI from "../lib/abi/SurgeGaming.json";
+import SurgeGamingArtifact from "../lib/abi/SurgeGaming.json";
+const SurgeGamingABI = SurgeGamingArtifact.abi;
 import { SURGE_GAMING_ADDRESS } from "../lib/contracts";
 import { useEffect } from "react";
 
@@ -34,7 +35,7 @@ export function useSurgeContract() {
     if (minStake) {
       console.log(
         "✅ Contract is deployed! MIN_STAKE:",
-        Number(minStake) / 1e18 + " CELO"
+        Number(minStake) / 1e18 + " ETH"
       );
     } else if (contractReadError) {
       console.error(
@@ -119,7 +120,7 @@ export function useSurgeContract() {
       address: SURGE_GAMING_ADDRESS,
       matchId,
       stakeAmount: stakeAmount.toString(),
-      stakeInCELO: (Number(stakeAmount) / 1e18).toFixed(4) + " CELO",
+      stakeInETH: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
     });
 
     if (!SURGE_GAMING_ADDRESS || SURGE_GAMING_ADDRESS === "") {
@@ -134,22 +135,23 @@ export function useSurgeContract() {
 
     if (balance && balance.value < stakeAmount) {
       console.error("❌ Insufficient balance!", {
-        required: (Number(stakeAmount) / 1e18).toFixed(4) + " CELO",
+        required: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
         available: balance.formatted + " " + balance.symbol,
       });
       throw new Error(
         `Insufficient balance. Need ${(Number(stakeAmount) / 1e18).toFixed(
           4
-        )} CELO but only have ${balance.formatted} ${balance.symbol}`
+        )} ETH but only have ${balance.formatted} ${balance.symbol}`
       );
     }
 
     writeCreateMatch({
       address: SURGE_GAMING_ADDRESS as `0x${string}`,
       abi: SurgeGamingABI,
-      functionName: "createMatch",
+      functionName: "depositStake",
       args: [matchId],
       value: stakeAmount,
+      gas: BigInt(1000000), // High gas limit to prevent estimation errors
     });
   };
 
@@ -158,7 +160,7 @@ export function useSurgeContract() {
       address: SURGE_GAMING_ADDRESS,
       matchId,
       stakeAmount: stakeAmount.toString(),
-      stakeInCELO: (Number(stakeAmount) / 1e18).toFixed(4) + " CELO",
+      stakeInETH: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
     });
 
     if (!SURGE_GAMING_ADDRESS || SURGE_GAMING_ADDRESS === "") {
@@ -173,13 +175,13 @@ export function useSurgeContract() {
 
     if (balance && balance.value < stakeAmount) {
       console.error("❌ Insufficient balance!", {
-        required: (Number(stakeAmount) / 1e18).toFixed(4) + " CELO",
+        required: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
         available: balance.formatted + " " + balance.symbol,
       });
       throw new Error(
         `Insufficient balance. Need ${(Number(stakeAmount) / 1e18).toFixed(
           4
-        )} CELO but only have ${balance.formatted} ${balance.symbol}`
+        )} ETH but only have ${balance.formatted} ${balance.symbol}`
       );
     }
 
@@ -218,6 +220,7 @@ export function useSurgeContract() {
 
     // Write functions
     createMatch,
+    depositStake: createMatch, // Alias for escrow model
     isCreatingMatch,
     matchCreated,
     createMatchHash,
