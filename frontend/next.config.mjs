@@ -6,6 +6,24 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Exclude problematic packages from server-side bundling
+  // (thread-stream and pino contain test files that break Turbopack)
+  serverExternalPackages: ['pino', 'thread-stream', 'pino-pretty'],
+  // Empty turbopack config (required in Next.js 16 when using webpack config)
+  turbopack: {},
+  // Webpack fallback for problematic modules (used when building with webpack)
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
 }
 
 export default nextConfig
+
