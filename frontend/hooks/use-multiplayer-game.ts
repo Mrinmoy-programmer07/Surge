@@ -48,7 +48,7 @@ export function useMultiplayerGame() {
 
     try {
       console.log("🔌 Connecting to game server...");
-      const socket = io("http://localhost:8080", {
+      const socket = io(process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8080", {
         transports: ["websocket"],
         autoConnect: true,
         reconnection: true,

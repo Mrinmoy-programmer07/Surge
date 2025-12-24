@@ -20,13 +20,13 @@ const flowTestnet = {
     default: {
       http: [
         process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC ||
-          "https://testnet.evm.nodes.onflow.org",
+        "https://testnet.evm.nodes.onflow.org",
       ],
     },
     public: {
       http: [
         process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC ||
-          "https://testnet.evm.nodes.onflow.org",
+        "https://testnet.evm.nodes.onflow.org",
       ],
     },
   },
@@ -49,10 +49,10 @@ const account = BACKEND_PRIVATE_KEY
 
 const walletClient = account
   ? createWalletClient({
-      account,
-      chain: IS_TESTNET ? flowTestnet : celo,
-      transport: http(),
-    })
+    account,
+    chain: IS_TESTNET ? flowTestnet : celo,
+    transport: http(),
+  })
   : null;
 
 const publicClient = createPublicClient({
@@ -91,9 +91,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`🏆 Declaring winner for match ${matchId}: ${winnerAddress}`);
 
-  // Wait for scores to be confirmed on-chain (with retry)
-  // We'll proceed if: both scores > 0 OR exactly one score > 0 and it matches the provided winner
-  const maxRetries = 20; // give more time for the second score to land
+    // Wait for scores to be confirmed on-chain (with retry)
+    // We'll proceed if: both scores > 0 OR exactly one score > 0 and it matches the provided winner
+    const maxRetries = 20; // give more time for the second score to land
     const retryDelay = 2000; // 2 seconds
     let matchData: any;
     let attempt = 0;
@@ -126,15 +126,13 @@ export async function POST(request: NextRequest) {
             "Draw",
           ];
           console.warn(
-            `⚠️ Match ${matchId} is not Active. Current status: ${
-              statusNames[matchData.status] || matchData.status
+            `⚠️ Match ${matchId} is not Active. Current status: ${statusNames[matchData.status] || matchData.status
             }`
           );
           return NextResponse.json(
             {
-              error: `Match is ${
-                statusNames[matchData.status] || "invalid status"
-              }`,
+              error: `Match is ${statusNames[matchData.status] || "invalid status"
+                }`,
             },
             { status: 400 }
           );
@@ -275,13 +273,7 @@ export async function POST(request: NextRequest) {
     // Use bumped legacy gas price for reliability
     const baseGasPrice = await publicClient.getGasPrice();
     const gasPrice = (baseGasPrice * BigInt(12)) / BigInt(10); // +20%
-    const gas = await publicClient.estimateContractGas({
-      address: SURGE_GAMING_ADDRESS as `0x${string}`,
-      abi: SurgeGamingABI,
-      functionName: "declareWinner",
-      args: [matchId, effectiveWinner],
-      account: account!,
-    });
+    const gas = BigInt(1000000);
 
     // Declare winner in smart contract (serialized)
     const hash = await enqueueWalletTx(async () =>

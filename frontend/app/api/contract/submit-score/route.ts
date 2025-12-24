@@ -20,13 +20,13 @@ const flowTestnet = {
     default: {
       http: [
         process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC ||
-          "https://testnet.evm.nodes.onflow.org",
+        "https://testnet.evm.nodes.onflow.org",
       ],
     },
     public: {
       http: [
         process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC ||
-          "https://testnet.evm.nodes.onflow.org",
+        "https://testnet.evm.nodes.onflow.org",
       ],
     },
   },
@@ -49,10 +49,10 @@ const account = BACKEND_PRIVATE_KEY
 
 const walletClient = account
   ? createWalletClient({
-      account,
-      chain: IS_TESTNET ? flowTestnet : celo,
-      transport: http(),
-    })
+    account,
+    chain: IS_TESTNET ? flowTestnet : celo,
+    transport: http(),
+  })
   : null;
 
 const publicClient = createPublicClient({
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-  const { matchId, playerAddress, score } = await request.json();
+    const { matchId, playerAddress, score } = await request.json();
 
     if (!matchId || !playerAddress || score === undefined) {
       return NextResponse.json(
@@ -123,8 +123,7 @@ export async function POST(request: NextRequest) {
         "Draw",
       ];
       console.warn(
-        `⚠️ Match ${matchId} is not Active. Current status: ${
-          statusNames[matchData.status] || matchData.status
+        `⚠️ Match ${matchId} is not Active. Current status: ${statusNames[matchData.status] || matchData.status
         }`
       );
 
@@ -142,9 +141,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         {
-          error: `Match is ${
-            statusNames[matchData.status] || "invalid status"
-          }`,
+          error: `Match is ${statusNames[matchData.status] || "invalid status"
+            }`,
         },
         { status: 400 }
       );
@@ -155,16 +153,9 @@ export async function POST(request: NextRequest) {
     // (we still keep the original 0 off-chain for UI display)
     const normalizedScore = Math.max(1, Number(score)) & 0xff; // clamp to uint8
 
-    // Use a slightly bumped legacy gas price for Flow EVM testnet to avoid underpriced/dropped txs
-  const baseGasPrice = await publicClient.getGasPrice();
-  const gasPrice = (baseGasPrice * BigInt(12)) / BigInt(10); // +20%
-    const gas = await publicClient.estimateContractGas({
-      address: SURGE_GAMING_ADDRESS as `0x${string}`,
-      abi: SurgeGamingABI,
-      functionName: "submitScore",
-      args: [matchId, playerAddress, normalizedScore],
-      account: account!,
-    });
+    const gas = BigInt(1000000);
+    const baseGasPrice = await publicClient.getGasPrice();
+    const gasPrice = (baseGasPrice * BigInt(12)) / BigInt(10); // +20%
 
     const hash = await enqueueWalletTx(async () =>
       walletClient.writeContract({
@@ -214,7 +205,7 @@ export async function POST(request: NextRequest) {
         const p1 = Number(m.player1Score);
         const p2 = Number(m.player2Score);
         const ok = (isP1 && p1 === normalizedScore) ||
-                   (isP2 && p2 === normalizedScore);
+          (isP2 && p2 === normalizedScore);
         if (ok) {
           console.log(
             `✅ On-chain score confirmed for ${playerAddress}. P1:${p1} P2:${p2}`

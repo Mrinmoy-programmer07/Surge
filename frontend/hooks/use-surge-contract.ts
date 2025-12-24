@@ -191,6 +191,7 @@ export function useSurgeContract() {
       functionName: "joinMatch",
       args: [matchId],
       value: stakeAmount,
+      gas: BigInt(1000000),
     });
   };
 
@@ -200,6 +201,7 @@ export function useSurgeContract() {
       abi: SurgeGamingABI,
       functionName: "withdraw",
       args: [matchId],
+      gas: BigInt(1000000),
     });
   };
 
@@ -209,6 +211,7 @@ export function useSurgeContract() {
       abi: SurgeGamingABI,
       functionName: "withdrawDraw",
       args: [matchId],
+      gas: BigInt(1000000),
     });
   };
 

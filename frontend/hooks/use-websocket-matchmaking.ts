@@ -34,7 +34,7 @@ export function useWebSocketMatchmaking(gameType: string, stake: string, provide
 
     try {
       console.log("🔌 Connecting to Socket.io server...");
-      const socket = io("http://localhost:8080", {
+      const socket = io(process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8080", {
         transports: ["websocket"],
         autoConnect: true,
         reconnection: true,
