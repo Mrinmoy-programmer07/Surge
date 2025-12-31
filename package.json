@@ -1,0 +1,13 @@
+{
+  "name": "surge",
+  "version": "1.0.0",
+  "description": "A multiplayer Game-fi staking dApp where users play duels by staking assets and winning it all",
+  "private": true,
+  "scripts": {
+    "install": "pnpm install",
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  }
+}

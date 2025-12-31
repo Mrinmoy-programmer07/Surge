@@ -1,12 +1,11 @@
-# Surge
+# Surge 
 
 > A multiplayer Game-fi staking dApp where users play duels by staking assets and winning it all — fair and unbiased.
 
-Live demo: [https://surge-mocha.vercel.app/](https://surge-mocha.vercel.app/) (found in repo). citeturn0view0
-
+Live demo: [https://surge-mocha.vercel.app/]
 ---
 
-## Table of Contents
+## Table of Contents ->
 
 * About
 * Features
