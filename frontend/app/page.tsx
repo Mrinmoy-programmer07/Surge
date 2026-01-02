@@ -35,17 +35,8 @@ export default function Home() {
               <Image src="/surge-logo.png" alt="Surge Logo" width={40} height={40} className="w-10 h-10" />
               <h1 className="text-3xl font-bold text-foreground">Surge</h1>
             </div>
-            {isConnected ? (
-              <Button
-                variant="outline"
-                onClick={handleDisconnect}
-                className="border-border hover:bg-card bg-transparent"
-              >
-                Disconnect
-              </Button>
-            ) : (
-              <WalletConnect onConnect={setAccount} onConnected={setIsConnected} />
-            )}
+            {/* WalletConnect handles both connected and disconnected states, including ChainSwitcher */}
+            <WalletConnect onConnect={setAccount} onConnected={setIsConnected} />
           </div>
 
           {/* Main Content */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { io, Socket } from "socket.io-client";
 
 type MatchFoundPayload = {
@@ -11,6 +11,7 @@ type MatchFoundPayload = {
   stake: string;
   matchId: string;
   gameStartTime: number;
+  chainId: number;
 };
 
 export function useWebSocketMatchmaking(gameType: string, stake: string, providedMatchId?: string) {
@@ -25,6 +26,7 @@ export function useWebSocketMatchmaking(gameType: string, stake: string, provide
   const hasJoinedQueueRef = useRef(false);
 
   const { address, isConnected: walletConnected } = useAccount();
+  const chainId = useChainId();
 
   const connect = () => {
     if (socketRef.current?.connected) {
@@ -129,16 +131,17 @@ export function useWebSocketMatchmaking(gameType: string, stake: string, provide
       return;
     }
 
-    // TODO: txSignature should come from Solana deposit
+    // TODO: txSignature should come from deposit
     const signature = txSignature || "placeholder_tx_" + Date.now();
 
-    console.log("🎮 Joining queue...", { gameType, stake, txSignature: signature });
+    console.log("🎮 Joining queue...", { gameType, stake, chainId, txSignature: signature });
 
     socketRef.current?.emit("join_queue", {
       playerAddress: address,
       gameType,
       stake,
       txSignature: signature,
+      chainId,
     });
 
     hasJoinedQueueRef.current = true;

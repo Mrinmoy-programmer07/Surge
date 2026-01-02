@@ -4,22 +4,29 @@ import {
   useWaitForTransactionReceipt,
   useAccount,
   useBalance,
+  useChainId,
 } from "wagmi";
 import { parseEther } from "viem";
 import SurgeGamingArtifact from "../lib/abi/SurgeGaming.json";
 const SurgeGamingABI = SurgeGamingArtifact.abi;
-import { SURGE_GAMING_ADDRESS } from "../lib/contracts";
-import { useEffect } from "react";
+import { getContractAddressForChain } from "../lib/contracts";
+import { useEffect, useMemo } from "react";
 
 export function useSurgeContract() {
   const { address: userAddress } = useAccount();
+  const chainId = useChainId();
   const { data: balance } = useBalance({
     address: userAddress,
   });
 
+  // Get chain-aware contract address
+  const contractAddress = useMemo(() => {
+    return getContractAddressForChain(chainId);
+  }, [chainId]);
+
   // Read contract data
   const { data: minStake, error: contractReadError } = useReadContract({
-    address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    address: contractAddress,
     abi: SurgeGamingABI,
     functionName: "MIN_STAKE",
   });
@@ -27,7 +34,8 @@ export function useSurgeContract() {
   // Log important info on mount
   useEffect(() => {
     console.log("🎮 Contract Configuration:", {
-      contractAddress: SURGE_GAMING_ADDRESS,
+      chainId,
+      contractAddress,
       userAddress,
       balance: balance ? `${balance.formatted} ${balance.symbol}` : "N/A",
     });
@@ -43,16 +51,16 @@ export function useSurgeContract() {
         contractReadError
       );
     }
-  }, [userAddress, balance, minStake, contractReadError]);
+  }, [chainId, contractAddress, userAddress, balance, minStake, contractReadError]);
 
   const { data: platformFeePercent } = useReadContract({
-    address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    address: contractAddress,
     abi: SurgeGamingABI,
     functionName: "PLATFORM_FEE_PERCENT",
   });
 
   const { data: accumulatedFees } = useReadContract({
-    address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    address: contractAddress,
     abi: SurgeGamingABI,
     functionName: "accumulatedFees",
   });
@@ -76,94 +84,55 @@ export function useSurgeContract() {
     }
   }, [matchCreated, createMatchHash]);
 
-  const {
-    writeContract: writeJoinMatch,
-    data: joinMatchHash,
-    isPending: isJoiningMatch,
-    error: joinMatchError,
-  } = useWriteContract();
-
-  const { isSuccess: matchJoined } = useWaitForTransactionReceipt({
-    hash: joinMatchHash,
-  });
-
-  // Log when match is joined successfully
-  useEffect(() => {
-    if (matchJoined && joinMatchHash) {
-      console.log("✅ Match join confirmed! Hash:", joinMatchHash);
-    }
-  }, [matchJoined, joinMatchHash]);
+  // Note: joinMatch hook removed - contract now uses depositStake + createMatchFromDeposits
 
   const {
     writeContract: writeWithdraw,
     data: withdrawHash,
     isPending: isWithdrawing,
+    error: withdrawError,
   } = useWriteContract();
 
   const { isSuccess: withdrawSuccess } = useWaitForTransactionReceipt({
     hash: withdrawHash,
   });
 
+  // Log withdraw errors
+  useEffect(() => {
+    if (withdrawError) {
+      console.error("❌ Withdraw error:", withdrawError.message);
+    }
+  }, [withdrawError]);
+
   const {
     writeContract: writeWithdrawDraw,
     data: withdrawDrawHash,
     isPending: isWithdrawingDraw,
+    error: withdrawDrawError,
   } = useWriteContract();
 
   const { isSuccess: withdrawDrawSuccess } = useWaitForTransactionReceipt({
     hash: withdrawDrawHash,
   });
 
+  // Log withdrawDraw errors
+  useEffect(() => {
+    if (withdrawDrawError) {
+      console.error("❌ WithdrawDraw error:", withdrawDrawError.message);
+    }
+  }, [withdrawDrawError]);
+
   // Helper functions to call contract methods
   const createMatch = (matchId: string, stakeAmount: bigint) => {
     console.log("🔧 createMatch params:", {
-      address: SURGE_GAMING_ADDRESS,
+      chainId,
+      address: contractAddress,
       matchId,
       stakeAmount: stakeAmount.toString(),
       stakeInETH: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
     });
 
-    if (!SURGE_GAMING_ADDRESS || SURGE_GAMING_ADDRESS === "") {
-      console.error("❌ Contract address not set in environment variables!");
-      throw new Error("Contract address not configured");
-    }
-
-    if (!userAddress) {
-      console.error("❌ Wallet not connected!");
-      throw new Error("Please connect your wallet");
-    }
-
-    if (balance && balance.value < stakeAmount) {
-      console.error("❌ Insufficient balance!", {
-        required: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
-        available: balance.formatted + " " + balance.symbol,
-      });
-      throw new Error(
-        `Insufficient balance. Need ${(Number(stakeAmount) / 1e18).toFixed(
-          4
-        )} ETH but only have ${balance.formatted} ${balance.symbol}`
-      );
-    }
-
-    writeCreateMatch({
-      address: SURGE_GAMING_ADDRESS as `0x${string}`,
-      abi: SurgeGamingABI,
-      functionName: "depositStake",
-      args: [matchId],
-      value: stakeAmount,
-      gas: BigInt(1000000), // High gas limit to prevent estimation errors
-    });
-  };
-
-  const joinMatch = (matchId: string, stakeAmount: bigint) => {
-    console.log("🔧 joinMatch params:", {
-      address: SURGE_GAMING_ADDRESS,
-      matchId,
-      stakeAmount: stakeAmount.toString(),
-      stakeInETH: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
-    });
-
-    if (!SURGE_GAMING_ADDRESS || SURGE_GAMING_ADDRESS === "") {
+    if (!contractAddress) {
       console.error("❌ Contract address not set!");
       throw new Error("Contract address not configured");
     }
@@ -185,34 +154,75 @@ export function useSurgeContract() {
       );
     }
 
-    writeJoinMatch({
-      address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    // Mantle L2 has unusual gas requirements (~450M gas) - let it auto-estimate
+    // Arbitrum Sepolia can use fixed 1M gas for faster estimation
+    const txConfig: any = {
+      address: contractAddress,
       abi: SurgeGamingABI,
-      functionName: "joinMatch",
+      functionName: "depositStake",
       args: [matchId],
       value: stakeAmount,
-      gas: BigInt(1000000),
-    });
+    };
+
+    // Only set gas limit for Arbitrum, let Mantle auto-estimate
+    if (chainId !== 5003) {
+      txConfig.gas = BigInt(1000000);
+    }
+
+    writeCreateMatch(txConfig);
   };
 
+  // Note: joinMatch is no longer used in the new escrow model
+  // Matches are created via backend calling createMatchFromDeposits after both players deposit
+
   const withdraw = (matchId: string) => {
-    writeWithdraw({
-      address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    console.log("💰 Calling withdraw on contract:", {
+      chainId,
+      address: contractAddress,
+      matchId,
+    });
+
+    if (!userAddress) {
+      console.error("❌ Wallet not connected!");
+      throw new Error("Please connect your wallet");
+    }
+
+    // Mantle needs auto gas estimation
+    const txConfig: any = {
+      address: contractAddress,
       abi: SurgeGamingABI,
       functionName: "withdraw",
       args: [matchId],
-      gas: BigInt(1000000),
-    });
+    };
+    if (chainId !== 5003) {
+      txConfig.gas = BigInt(1000000);
+    }
+    writeWithdraw(txConfig);
   };
 
   const withdrawDraw = (matchId: string) => {
-    writeWithdrawDraw({
-      address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    console.log("💰 Calling withdrawDraw on contract:", {
+      chainId,
+      address: contractAddress,
+      matchId,
+    });
+
+    if (!userAddress) {
+      console.error("❌ Wallet not connected!");
+      throw new Error("Please connect your wallet");
+    }
+
+    // Mantle needs auto gas estimation
+    const txConfig: any = {
+      address: contractAddress,
       abi: SurgeGamingABI,
       functionName: "withdrawDraw",
       args: [matchId],
-      gas: BigInt(1000000),
-    });
+    };
+    if (chainId !== 5003) {
+      txConfig.gas = BigInt(1000000);
+    }
+    writeWithdrawDraw(txConfig);
   };
 
   return {
@@ -229,28 +239,29 @@ export function useSurgeContract() {
     createMatchHash,
     createMatchError,
 
-    joinMatch,
-    isJoiningMatch,
-    matchJoined,
-    joinMatchHash,
-    joinMatchError,
+    // Note: joinMatch removed - use depositStake + backend createMatchFromDeposits
 
     withdraw,
     isWithdrawing,
     withdrawSuccess,
     withdrawHash,
+    withdrawError,
 
     withdrawDraw,
     isWithdrawingDraw,
     withdrawDrawSuccess,
     withdrawDrawHash,
+    withdrawDrawError,
   };
 }
 
-// Separate hooks for reading dynamic data
+// Separate hooks for reading dynamic data (chain-aware)
 export function useMatchData(matchId: string) {
+  const chainId = useChainId();
+  const contractAddress = getContractAddressForChain(chainId);
+
   return useReadContract({
-    address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    address: contractAddress,
     abi: SurgeGamingABI,
     functionName: "getMatch",
     args: [matchId],
@@ -258,8 +269,11 @@ export function useMatchData(matchId: string) {
 }
 
 export function usePlayerStats(playerAddress: string) {
+  const chainId = useChainId();
+  const contractAddress = getContractAddressForChain(chainId);
+
   return useReadContract({
-    address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    address: contractAddress,
     abi: SurgeGamingABI,
     functionName: "getPlayerStats",
     args: [playerAddress],
@@ -267,8 +281,11 @@ export function usePlayerStats(playerAddress: string) {
 }
 
 export function useCalculatePayout(stakeAmount: string) {
+  const chainId = useChainId();
+  const contractAddress = getContractAddressForChain(chainId);
+
   return useReadContract({
-    address: SURGE_GAMING_ADDRESS as `0x${string}`,
+    address: contractAddress,
     abi: SurgeGamingABI,
     functionName: "calculatePayout",
     args: [parseEther(stakeAmount)],

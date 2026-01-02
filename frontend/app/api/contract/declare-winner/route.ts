@@ -5,6 +5,7 @@ import { celo } from "viem/chains";
 import SurgeGamingABI from "@/lib/abi/SurgeGaming.json";
 import { SURGE_GAMING_ADDRESS } from "@/lib/contracts";
 import { enqueueWalletTx } from "@/lib/tx-queue";
+import { updateLeaderboardAfterGame } from "@/lib/firebase-admin";
 
 // Flow EVM Testnet chain config
 const flowTestnet = {
@@ -349,8 +350,37 @@ export async function POST(request: NextRequest) {
         }),
       });
       console.log("🔁 Local match store updated with on-chain results");
+
+      // 🆕 Update Firebase leaderboard with game results
+      const isDraw = effectiveWinner === "0x0000000000000000000000000000000000000000";
+      if (!isDraw) {
+        const loserAddress = effectiveWinner.toLowerCase() === String(latestAfter.player1).toLowerCase()
+          ? String(latestAfter.player2)
+          : String(latestAfter.player1);
+
+        // Calculate winner payout (75% of total pot = stake * 2 * 0.75)
+        const stakeWei = Number(latestAfter.stake || 0);
+        const winnerPayout = (stakeWei * 2 * 0.75) / 1e18; // Convert to ETH
+
+        await updateLeaderboardAfterGame(
+          effectiveWinner,
+          loserAddress,
+          winnerPayout,
+          false
+        );
+        console.log("📊 Firebase leaderboard updated!");
+      } else {
+        // Handle draw - just update lastActive
+        await updateLeaderboardAfterGame(
+          String(latestAfter.player1),
+          String(latestAfter.player2),
+          0,
+          true
+        );
+        console.log("📊 Firebase updated for draw match");
+      }
     } catch (e) {
-      console.warn("⚠️ Failed to update local match store after declare-winner:", e);
+      console.warn("⚠️ Failed to update local match store or leaderboard:", e);
     }
 
     return NextResponse.json({

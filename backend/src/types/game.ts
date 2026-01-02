@@ -41,6 +41,7 @@ export interface QueuePlayer {
     txSignature: string; // Solana deposit tx proof
     status: QueueStatus;
     joinedAt: number;
+    chainId: number; // Chain ID for chain-aware matchmaking
 }
 
 export interface MatchFoundPayload {
@@ -50,4 +51,5 @@ export interface MatchFoundPayload {
     stake: string;
     matchId: string;
     gameStartTime: number;
+    chainId: number; // Chain ID for the match
 }

@@ -8,6 +8,9 @@ interface RefundRequest {
     stake: string;
 }
 
+// Supported chain IDs for validation
+const SUPPORTED_CHAIN_IDS = [421614, 5003]; // Arbitrum Sepolia, Mantle Sepolia
+
 export class MatchmakingManager {
     private queues: Map<string, QueuePlayer[]> = new Map();
     private socketToQueue: Map<string, string> = new Map();
@@ -22,23 +25,30 @@ export class MatchmakingManager {
         this.gameManager = gameManager;
     }
 
-    private getQueueKey(gameType: string, stake: string): string {
-        return `${gameType}_${stake}`;
+    // Chain-aware queue key: gameType_stake_chainId
+    private getQueueKey(gameType: string, stake: string, chainId: number): string {
+        return `${gameType}_${stake}_${chainId}`;
     }
 
-    // New: Require txSignature for pay-before-queue
+    // New: Require txSignature and chainId for chain-aware matchmaking
     handleJoinQueue(
         socket: Socket,
-        data: { playerAddress: string; gameType: string; stake: string; txSignature: string }
+        data: { playerAddress: string; gameType: string; stake: string; txSignature: string; chainId: number }
     ) {
-        const { playerAddress, gameType, stake, txSignature } = data;
+        const { playerAddress, gameType, stake, txSignature, chainId } = data;
 
         if (!playerAddress || !gameType || !stake || !txSignature) {
             socket.emit("error", { message: "Missing required fields (must include txSignature)" });
             return;
         }
 
-        const queueKey = this.getQueueKey(gameType, stake);
+        // Validate chainId
+        if (!chainId || !SUPPORTED_CHAIN_IDS.includes(chainId)) {
+            socket.emit("error", { message: `Invalid chainId. Supported: ${SUPPORTED_CHAIN_IDS.join(', ')}` });
+            return;
+        }
+
+        const queueKey = this.getQueueKey(gameType, stake, chainId);
 
         // Remove player from any existing queue (no refund here, they're re-joining)
         this.removePlayerFromQueue(socket.id, false);
@@ -71,6 +81,7 @@ export class MatchmakingManager {
             txSignature,
             status: QueueStatus.WAITING,
             joinedAt: Date.now(),
+            chainId,
         };
 
         queue.push(player);
@@ -208,6 +219,7 @@ export class MatchmakingManager {
             stake: player1.stake,
             matchId,
             gameStartTime,
+            chainId: player1.chainId,
         };
 
         // Call smart contract to create match from deposits

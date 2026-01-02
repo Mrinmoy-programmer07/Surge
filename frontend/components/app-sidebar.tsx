@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { LayoutDashboard, Gamepad2, Trophy, Gift, Settings, Info, ChevronDown, Wallet, TrendingUp } from "lucide-react"
 import { formatAddress } from "@/lib/game-utils"
 import { useNativeBalance } from "@/hooks/use-native-balance"
-import { useChainId } from "wagmi"
 
 interface AppSidebarProps {
   account: string | null
@@ -19,19 +18,9 @@ export default function AppSidebar({ account, isConnected }: AppSidebarProps) {
   const pathname = usePathname()
   const [isExpanded, setIsExpanded] = useState(true)
 
-  // Native CELO balance
+  // Native balance
   const { balance, symbol, isLoading } = useNativeBalance()
-  const chainId = useChainId()
-  const networkName = useMemo(() => {
-    switch (chainId) {
-      case 11142220:
-        return "Celo Sepolia"
-      case 42220:
-        return "Celo Mainnet"
-      default:
-        return chainId ? `Chain ${chainId}` : "Unknown Network"
-    }
-  }, [chainId])
+
   const stats = {
     gamesPlayed: 24,
     winRate: 75,
@@ -54,9 +43,8 @@ export default function AppSidebar({ account, isConnected }: AppSidebarProps) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 ${
-        isExpanded ? "w-64" : "w-20"
-      } flex flex-col`}
+      className={`fixed left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 ${isExpanded ? "w-64" : "w-20"
+        } flex flex-col`}
     >
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
@@ -131,11 +119,10 @@ export default function AppSidebar({ account, isConnected }: AppSidebarProps) {
             <Link key={item.href} href={item.href}>
               <Button
                 variant={isActive ? "default" : "ghost"}
-                className={`w-full justify-start gap-3 ${
-                  isActive
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "text-foreground hover:text-primary hover:bg-black"
-                } ${!isExpanded && "justify-center"}`}
+                className={`w-full justify-start gap-3 ${isActive
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "text-foreground hover:text-primary hover:bg-black"
+                  } ${!isExpanded && "justify-center"}`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
                 {isExpanded && <span>{item.label}</span>}
@@ -149,11 +136,11 @@ export default function AppSidebar({ account, isConnected }: AppSidebarProps) {
       {isExpanded && (
         <div className="p-4 border-t border-border">
           <div className="text-xs text-muted-foreground text-center">
-            <p>{networkName}</p>
-            <p className="text-xs mt-1">v1.0.0</p>
+            <p>Surge Gaming v1.0.0</p>
           </div>
         </div>
       )}
     </aside>
   )
 }
+
