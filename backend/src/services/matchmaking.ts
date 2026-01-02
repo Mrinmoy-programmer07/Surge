@@ -222,15 +222,16 @@ export class MatchmakingManager {
             chainId: player1.chainId,
         };
 
-        // Call smart contract to create match from deposits
+        // Call smart contract to create match from deposits (on correct chain)
         try {
             const { contractService } = await import('./contract');
             await contractService.createMatchFromDeposits(
                 matchId,
                 player1.txSignature,
-                player2.txSignature
+                player2.txSignature,
+                player1.chainId // Pass chainId to call correct chain
             );
-            console.log(`✅ Match created on-chain: ${matchId}`);
+            console.log(`✅ Match created on-chain (chainId: ${player1.chainId}): ${matchId}`);
         } catch (error: any) {
             console.error(`❌ Failed to create match on-chain:`, error.message);
             // Continue anyway - match can still be played

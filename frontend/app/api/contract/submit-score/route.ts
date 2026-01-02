@@ -1,79 +1,80 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createWalletClient, createPublicClient, http, parseEther } from "viem";
+import { createWalletClient, createPublicClient, http, Chain, defineChain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { celo } from "viem/chains";
+import { arbitrumSepolia } from "viem/chains";
 import SurgeGamingABI from "@/lib/abi/SurgeGaming.json";
-import { SURGE_GAMING_ADDRESS } from "@/lib/contracts";
+import { CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { enqueueWalletTx } from "@/lib/tx-queue";
 
-// Flow EVM Testnet chain config
-const flowTestnet = {
-  id: 545,
-  name: "Flow EVM Testnet",
-  network: "flow-testnet",
+// Mantle Sepolia chain config
+const mantleSepolia = defineChain({
+  id: 5003,
+  name: 'Mantle Sepolia',
   nativeCurrency: {
+    name: 'Mantle',
+    symbol: 'MNT',
     decimals: 18,
-    name: "Flow",
-    symbol: "FLOW",
   },
   rpcUrls: {
-    default: {
-      http: [
-        process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC ||
-        "https://testnet.evm.nodes.onflow.org",
-      ],
-    },
-    public: {
-      http: [
-        process.env.NEXT_PUBLIC_FLOW_TESTNET_RPC ||
-        "https://testnet.evm.nodes.onflow.org",
-      ],
-    },
+    default: { http: ['https://rpc.sepolia.mantle.xyz'] },
   },
   blockExplorers: {
-    default: {
-      name: "Flow EVM Explorer",
-      url: "https://evm-testnet.flowscan.io",
-    },
+    default: { name: 'Mantle Explorer', url: 'https://sepolia.mantlescan.xyz' },
   },
   testnet: true,
+});
+
+// Chain configurations
+const CHAIN_CONFIGS: Record<number, { chain: Chain; rpcUrl: string }> = {
+  421614: {
+    chain: arbitrumSepolia,
+    rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
+  },
+  5003: {
+    chain: mantleSepolia,
+    rpcUrl: 'https://rpc.sepolia.mantle.xyz',
+  },
 };
+
+const DEFAULT_CHAIN_ID = 421614;
 
 // Backend wallet for oracle operations
 const BACKEND_PRIVATE_KEY = process.env.BACKEND_PRIVATE_KEY as `0x${string}`;
-const IS_TESTNET = process.env.NEXT_PUBLIC_NETWORK !== "mainnet";
 
 const account = BACKEND_PRIVATE_KEY
   ? privateKeyToAccount(BACKEND_PRIVATE_KEY)
   : null;
 
-const walletClient = account
-  ? createWalletClient({
-    account,
-    chain: IS_TESTNET ? flowTestnet : celo,
-    transport: http(),
-  })
-  : null;
+// Helper to get clients for a specific chain
+function getClients(chainId: number) {
+  const config = CHAIN_CONFIGS[chainId] || CHAIN_CONFIGS[DEFAULT_CHAIN_ID];
+  const contractAddress = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES]
+    || CONTRACT_ADDRESSES[DEFAULT_CHAIN_ID as keyof typeof CONTRACT_ADDRESSES];
 
-const publicClient = createPublicClient({
-  chain: IS_TESTNET ? flowTestnet : celo,
-  transport: http(),
-});
+  const publicClient = createPublicClient({
+    chain: config.chain,
+    transport: http(config.rpcUrl),
+  });
+
+  const walletClient = account
+    ? createWalletClient({
+      account,
+      chain: config.chain,
+      transport: http(config.rpcUrl),
+    })
+    : null;
+
+  return { publicClient, walletClient, contractAddress };
+}
 
 /**
  * POST /api/contract/submit-score
  * Backend submits player score to smart contract
+ * Now supports multichain via chainId parameter
  */
 export async function POST(request: NextRequest) {
   try {
-    if (!walletClient || !account) {
-      return NextResponse.json(
-        { error: "Backend wallet not configured" },
-        { status: 500 }
-      );
-    }
-
-    const { matchId, playerAddress, score } = await request.json();
+    const { matchId, playerAddress, score, chainId = DEFAULT_CHAIN_ID } = await request.json();
 
     if (!matchId || !playerAddress || score === undefined) {
       return NextResponse.json(
@@ -82,15 +83,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get chain-aware clients
+    const { publicClient, walletClient, contractAddress } = getClients(chainId);
+    const chainName = CHAIN_CONFIGS[chainId]?.chain.name || 'Unknown';
+
+    if (!walletClient || !account) {
+      return NextResponse.json(
+        { error: "Backend wallet not configured" },
+        { status: 500 }
+      );
+    }
+
     console.log(
-      `📝 Submitting score for match ${matchId}: Player ${playerAddress} scored ${score}`
+      `📝 Submitting score on ${chainName} (chainId: ${chainId}) for match ${matchId}: Player ${playerAddress} scored ${score}`
     );
+    console.log(`📍 Contract address: ${contractAddress}`);
 
     // First, check if match exists and is in Active status on-chain
     let matchData: any;
     try {
       matchData = await publicClient.readContract({
-        address: SURGE_GAMING_ADDRESS as `0x${string}`,
+        address: contractAddress as `0x${string}`,
         abi: SurgeGamingABI,
         functionName: "getMatch",
         args: [matchId],
@@ -109,7 +122,7 @@ export async function POST(request: NextRequest) {
             "Please wait for blockchain confirmation before submitting scores",
           shouldRetry: true,
         },
-        { status: 425 } // 425 Too Early - resource not yet available
+        { status: 425 }
       );
     }
 
@@ -123,12 +136,10 @@ export async function POST(request: NextRequest) {
         "Draw",
       ];
       console.warn(
-        `⚠️ Match ${matchId} is not Active. Current status: ${statusNames[matchData.status] || matchData.status
-        }`
+        `⚠️ Match ${matchId} is not Active. Current status: ${statusNames[matchData.status] || matchData.status}`
       );
 
       if (matchData.status === 0) {
-        // Pending - waiting for second player
         return NextResponse.json(
           {
             error: "Match is still pending",
@@ -141,31 +152,34 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         {
-          error: `Match is ${statusNames[matchData.status] || "invalid status"
-            }`,
+          error: `Match is ${statusNames[matchData.status] || "invalid status"}`,
         },
         { status: 400 }
       );
     }
 
-    // Submit score to smart contract (serialized + wait for receipt)
-    // Contract treats 0 as "not submitted", so coerce a zero score to 1 on-chain
-    // (we still keep the original 0 off-chain for UI display)
-    const normalizedScore = Math.max(1, Number(score)) & 0xff; // clamp to uint8
+    // Submit score to smart contract
+    const normalizedScore = Math.max(1, Number(score)) & 0xff;
 
-    const gas = BigInt(1000000);
     const baseGasPrice = await publicClient.getGasPrice();
-    const gasPrice = (baseGasPrice * BigInt(12)) / BigInt(10); // +20%
+    const gasPrice = (baseGasPrice * BigInt(12)) / BigInt(10);
+
+    // Gas config - Mantle needs auto-estimation
+    const txConfig: any = {
+      address: contractAddress as `0x${string}`,
+      abi: SurgeGamingABI,
+      functionName: "submitScore",
+      args: [matchId, playerAddress, normalizedScore],
+      gasPrice,
+    };
+
+    // Only set gas limit for non-Mantle chains
+    if (chainId !== 5003) {
+      txConfig.gas = BigInt(1000000);
+    }
 
     const hash = await enqueueWalletTx(async () =>
-      walletClient.writeContract({
-        address: SURGE_GAMING_ADDRESS as `0x${string}`,
-        abi: SurgeGamingABI,
-        functionName: "submitScore",
-        args: [matchId, playerAddress, normalizedScore],
-        gas,
-        gasPrice,
-      })
+      walletClient.writeContract(txConfig)
     );
 
     console.log(`✅ Score submitted! Transaction hash: ${hash}`);
@@ -174,7 +188,7 @@ export async function POST(request: NextRequest) {
     const receipt = await publicClient.waitForTransactionReceipt({
       hash,
       pollingInterval: 2000,
-      timeout: 240000, // 4 minutes
+      timeout: 240000,
     });
     if (receipt.status !== "success") {
       console.error("❌ Score tx failed on-chain", receipt);
@@ -184,13 +198,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Strong confirm: poll getMatch until the submitted score is reflected on-chain
+    // Confirm score on-chain
     try {
-      const maxChecks = 15; // ~30s
+      const maxChecks = 15;
       const delay = 2000;
       for (let i = 0; i < maxChecks; i++) {
         const m: any = await publicClient.readContract({
-          address: SURGE_GAMING_ADDRESS as `0x${string}`,
+          address: contractAddress as `0x${string}`,
           abi: SurgeGamingABI,
           functionName: "getMatch",
           args: [matchId],
@@ -230,6 +244,7 @@ export async function POST(request: NextRequest) {
       matchId,
       playerAddress,
       score: normalizedScore,
+      chainId,
     });
   } catch (error: any) {
     console.error("❌ Error submitting score:", error);
