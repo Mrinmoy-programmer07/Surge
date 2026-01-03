@@ -1,3 +1,4 @@
+import "dotenv/config"; // Load .env file
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 

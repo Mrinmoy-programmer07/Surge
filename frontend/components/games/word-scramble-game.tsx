@@ -13,6 +13,7 @@ interface WordScrambleGameProps {
   opponent: string
   stake: string
   matchId: string
+  chainId: number
 }
 
 const WORD_LIST = [
@@ -26,7 +27,7 @@ const WORD_LIST = [
   { word: "SECURITY", scrambled: "URITYSEC" },
 ]
 
-export default function WordScrambleGame({ account, opponent, stake, matchId }: WordScrambleGameProps) {
+export default function WordScrambleGame({ account, opponent, stake, matchId, chainId }: WordScrambleGameProps) {
   const [gamePhase, setGamePhase] = useState<"display" | "input" | "opponent-turn" | "results">("display")
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [playerScore, setPlayerScore] = useState(0)
@@ -49,7 +50,7 @@ export default function WordScrambleGame({ account, opponent, stake, matchId }: 
     submitScore: apiSubmitScore,
     submitWinner,
     error: apiError
-  } = useMatchApi(matchId, account)
+  } = useMatchApi(matchId, account, chainId)
 
   const { data: blockchainMatch, refetch: refetchMatch } = useMatchData(matchId)
 

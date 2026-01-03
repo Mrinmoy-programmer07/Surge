@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     try {
       matchData = await publicClient.readContract({
         address: contractAddress as `0x${string}`,
-        abi: SurgeGamingABI,
+        abi: SurgeGamingABI.abi,
         functionName: "getMatch",
         args: [matchId],
       });
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     // Gas config - Mantle needs auto-estimation
     const txConfig: any = {
       address: contractAddress as `0x${string}`,
-      abi: SurgeGamingABI,
+      abi: SurgeGamingABI.abi,
       functionName: "submitScore",
       args: [matchId, playerAddress, normalizedScore],
       gasPrice,
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < maxChecks; i++) {
         const m: any = await publicClient.readContract({
           address: contractAddress as `0x${string}`,
-          abi: SurgeGamingABI,
+          abi: SurgeGamingABI.abi,
           functionName: "getMatch",
           args: [matchId],
         });

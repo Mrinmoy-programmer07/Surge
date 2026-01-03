@@ -9,9 +9,10 @@ interface MatchState {
   winner: string | null;
   status: "waiting" | "in_progress" | "finished";
   gameData: any;
+  chainId?: number; // Which chain the match is on
 }
 
-export function useMatchApi(matchId: string, playerAddress: string) {
+export function useMatchApi(matchId: string, playerAddress: string, chainId: number = 421614) {
   const [matchState, setMatchState] = useState<MatchState>({
     matchId: "",
     player1: "",
@@ -21,6 +22,7 @@ export function useMatchApi(matchId: string, playerAddress: string) {
     winner: null,
     status: "waiting",
     gameData: {},
+    chainId,
   });
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export function useMatchApi(matchId: string, playerAddress: string) {
             player2,
             status: "in_progress",
             gameData: gameData || {},
+            chainId, // Pass chainId to API
           }),
         });
 
@@ -50,7 +53,7 @@ export function useMatchApi(matchId: string, playerAddress: string) {
         setError(err instanceof Error ? err.message : "Unknown error");
       }
     },
-    [matchId]
+    [matchId, chainId]
   );
 
   // Submit score

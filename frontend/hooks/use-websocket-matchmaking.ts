@@ -53,7 +53,7 @@ export function useWebSocketMatchmaking(gameType: string, stake: string, provide
 
         // Join queue if wallet connected and not already in queue
         if (walletConnected && address && !hasJoinedQueueRef.current) {
-          joinQueue();
+          joinQueue(providedMatchId);
         }
       });
 
@@ -131,16 +131,20 @@ export function useWebSocketMatchmaking(gameType: string, stake: string, provide
       return;
     }
 
-    // TODO: txSignature should come from deposit
-    const signature = txSignature || "placeholder_tx_" + Date.now();
+    // Use provided matchId as the deposit ID (required for createMatchFromDeposits)
+    if (!txSignature && !providedMatchId) {
+      console.error("❌ No deposit ID provided! Cannot join queue without deposit.");
+      return;
+    }
+    const depositId = txSignature || providedMatchId || "";
 
-    console.log("🎮 Joining queue...", { gameType, stake, chainId, txSignature: signature });
+    console.log("🎮 Joining queue...", { gameType, stake, chainId, depositId });
 
     socketRef.current?.emit("join_queue", {
       playerAddress: address,
       gameType,
       stake,
-      txSignature: signature,
+      txSignature: depositId,
       chainId,
     });
 
@@ -174,10 +178,10 @@ export function useWebSocketMatchmaking(gameType: string, stake: string, provide
 
   // Join queue when connected and game/stake changes
   useEffect(() => {
-    if (isConnected && walletConnected && address && !hasJoinedQueueRef.current) {
-      joinQueue();
+    if (isConnected && walletConnected && address && !hasJoinedQueueRef.current && providedMatchId) {
+      joinQueue(providedMatchId);
     }
-  }, [gameType, stake, isConnected]);
+  }, [gameType, stake, isConnected, providedMatchId]);
 
   return {
     opponent,

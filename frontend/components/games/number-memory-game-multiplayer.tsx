@@ -13,9 +13,10 @@ interface NumberMemoryGameProps {
   opponent: string
   stake: string
   matchId: string
+  chainId: number
 }
 
-export default function NumberMemoryGame({ account, opponent, stake, matchId }: NumberMemoryGameProps) {
+export default function NumberMemoryGame({ account, opponent, stake, matchId, chainId }: NumberMemoryGameProps) {
   const [gamePhase, setGamePhase] = useState<"display" | "input" | "waiting" | "results">("display")
   const [sequence, setSequence] = useState<number[]>([])
   const [playerInput, setPlayerInput] = useState<number[]>([])
@@ -39,7 +40,7 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId }: 
     submitScore: apiSubmitScore,
     submitWinner,
     error: apiError
-  } = useMatchApi(matchId, account)
+  } = useMatchApi(matchId, account, chainId)
 
   // Function to scramble the sequence for input buttons
   const scrambleSequence = (seq: number[]): number[] => {

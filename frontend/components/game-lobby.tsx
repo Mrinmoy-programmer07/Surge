@@ -13,6 +13,7 @@ import MemoryMatchGame from "@/components/games/memory-match-game"
 import { useToast } from "@/hooks/use-toast"
 import { useSurgeContract } from "@/hooks/use-surge-contract"
 import { parseEther } from "viem"
+import { useChainId } from "wagmi"
 
 interface GameLobbyProps {
   account: string
@@ -29,6 +30,7 @@ export default function GameLobby({ account, onDisconnect }: GameLobbyProps) {
 
   const { toast } = useToast()
   const { depositStake, isCreatingMatch, matchCreated, createMatchError } = useSurgeContract()
+  const chainId = useChainId()
 
   const handleStakeConfirm = async (stakeAmount: string) => {
     setStake(stakeAmount)
@@ -93,7 +95,7 @@ export default function GameLobby({ account, onDisconnect }: GameLobbyProps) {
   }
 
   if (gameState === "playing" && selectedGame && matchId && opponent) {
-    const gameProps = { account, opponent, stake, matchId }
+    const gameProps = { account, opponent, stake, matchId, chainId }
     switch (selectedGame) {
       case "number-memory":
         return <NumberMemoryGame {...gameProps} />

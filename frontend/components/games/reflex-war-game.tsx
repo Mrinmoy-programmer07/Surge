@@ -13,9 +13,10 @@ interface ReflexWarGameProps {
   opponent: string
   stake: string
   matchId: string
+  chainId: number
 }
 
-export default function ReflexWarGame({ account, opponent, stake, matchId }: ReflexWarGameProps) {
+export default function ReflexWarGame({ account, opponent, stake, matchId, chainId }: ReflexWarGameProps) {
   const [gamePhase, setGamePhase] = useState<"waiting" | "active" | "opponent-turn" | "results">("waiting")
   const [playerReactionTime, setPlayerReactionTime] = useState<number | null>(null)
   const [opponentReactionTime, setOpponentReactionTime] = useState<number | null>(null)
@@ -39,7 +40,7 @@ export default function ReflexWarGame({ account, opponent, stake, matchId }: Ref
     submitScore: apiSubmitScore,
     submitWinner,
     error: apiError
-  } = useMatchApi(matchId, account)
+  } = useMatchApi(matchId, account, chainId)
 
   const { data: blockchainMatch, refetch: refetchMatch } = useMatchData(matchId)
 

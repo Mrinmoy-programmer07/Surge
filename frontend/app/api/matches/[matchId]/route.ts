@@ -13,6 +13,7 @@ const matches = new Map<
     status: "waiting" | "in_progress" | "finished";
     gameData: any;
     createdAt: number;
+    chainId: number; // NEW: Store which chain this match is on
   }
 >();
 
@@ -50,7 +51,7 @@ export async function POST(
   let match = matches.get(matchId);
 
   if (!match) {
-    // Create new match
+    // Create new match - chainId is required!
     match = {
       matchId,
       player1: body.player1 || "",
@@ -61,6 +62,7 @@ export async function POST(
       status: "waiting",
       gameData: body.gameData || {},
       createdAt: Date.now(),
+      chainId: body.chainId || 421614, // Default to Arbitrum if not provided
     };
   }
 
@@ -104,7 +106,10 @@ export async function PUT(
           const res = await fetch(`${request.nextUrl.origin}/api/contract/submit-score`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+              ...payload,
+              chainId: match?.chainId || 421614, // Pass chainId to contract
+            }),
           });
 
           if (res.ok) {
@@ -146,7 +151,7 @@ export async function PUT(
         player1Score: match.player1Score,
         player2Score: match.player2Score,
       });
-      
+
       // Submit score to smart contract (with retries). If it fails, we do NOT set
       // the match to finished nor declare a winner until it succeeds.
       try {
@@ -166,7 +171,7 @@ export async function PUT(
         player1Score: match.player1Score,
         player2Score: match.player2Score,
       });
-      
+
       // Submit score to smart contract (with retries). We will only proceed to
       // declare a winner if this submission succeeded (and the other one did too).
       let submit2Ok = false;
@@ -211,6 +216,7 @@ export async function PUT(
                 body: JSON.stringify({
                   matchId,
                   winnerAddress: "0x0000000000000000000000000000000000000000", // Zero address for tie
+                  chainId: match.chainId, // Pass chainId to contract
                   // include off-chain players & scores to help backend decide when on-chain
                   offChainPlayer1: match.player1,
                   offChainPlayer2: match.player2,
@@ -242,6 +248,7 @@ export async function PUT(
                 body: JSON.stringify({
                   matchId,
                   winnerAddress,
+                  chainId: match.chainId, // Pass chainId to contract
                   // pass off-chain players & scores so the backend can make
                   // an informed decision even if one submit hasn't reflected on-chain
                   offChainPlayer1: match.player1,
@@ -294,6 +301,7 @@ export async function PUT(
           body: JSON.stringify({
             matchId,
             winnerAddress: winner,
+            chainId: match.chainId, // Pass chainId to contract
           }),
         });
         console.log(`🏆 Winner declared on smart contract: ${winner}`);

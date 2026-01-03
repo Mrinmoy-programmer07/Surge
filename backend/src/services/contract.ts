@@ -23,7 +23,15 @@ export class ContractService {
     private wallet: ethers.Wallet | null = null;
 
     constructor() {
-        const privateKey = process.env.BACKEND_PRIVATE_KEY;
+        let privateKey = process.env.BACKEND_PRIVATE_KEY;
+
+        // Debug: Check if env var is loaded
+        console.log('🔑 BACKEND_PRIVATE_KEY loaded:', privateKey ? `Yes (${privateKey.length} chars)` : 'No');
+
+        // Add 0x prefix if missing
+        if (privateKey && !privateKey.startsWith('0x')) {
+            privateKey = `0x${privateKey}`;
+        }
 
         // Initialize providers and contracts for all chains
         for (const [chainIdStr, config] of Object.entries(CHAINS)) {

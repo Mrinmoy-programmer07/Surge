@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       try {
         matchData = await publicClient.readContract({
           address: contractAddress as `0x${string}`,
-          abi: SurgeGamingABI,
+          abi: SurgeGamingABI.abi,
           functionName: "getMatch",
           args: [matchId],
         });
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     try {
       const latest: any = await publicClient.readContract({
         address: contractAddress as `0x${string}`,
-        abi: SurgeGamingABI,
+        abi: SurgeGamingABI.abi,
         functionName: "getMatch",
         args: [matchId],
       });
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
     // Declare winner in smart contract
     const txConfig: any = {
       address: contractAddress as `0x${string}`,
-      abi: SurgeGamingABI,
+      abi: SurgeGamingABI.abi,
       functionName: "declareWinner",
       args: [matchId, effectiveWinner],
       gasPrice,
@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
       while (checks < 10) {
         const after: any = await publicClient.readContract({
           address: contractAddress as `0x${string}`,
-          abi: SurgeGamingABI,
+          abi: SurgeGamingABI.abi,
           functionName: "getMatch",
           args: [matchId],
         });
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
     try {
       const latestAfter: any = await publicClient.readContract({
         address: contractAddress as `0x${string}`,
-        abi: SurgeGamingABI,
+        abi: SurgeGamingABI.abi,
         functionName: "getMatch",
         args: [matchId],
       });

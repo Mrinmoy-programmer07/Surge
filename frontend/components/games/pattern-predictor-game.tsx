@@ -13,9 +13,10 @@ interface PatternPredictorGameProps {
   opponent: string
   stake: string
   matchId: string
+  chainId: number
 }
 
-export default function PatternPredictorGame({ account, opponent, stake, matchId }: PatternPredictorGameProps) {
+export default function PatternPredictorGame({ account, opponent, stake, matchId, chainId }: PatternPredictorGameProps) {
   const [gamePhase, setGamePhase] = useState<"display" | "input" | "opponent-turn" | "results">("display")
   const [pattern, setPattern] = useState<number[]>([])
   const [playerGuess, setPlayerGuess] = useState<number | null>(null)
@@ -38,7 +39,7 @@ export default function PatternPredictorGame({ account, opponent, stake, matchId
     submitScore: apiSubmitScore,
     submitWinner,
     error: apiError
-  } = useMatchApi(matchId, account)
+  } = useMatchApi(matchId, account, chainId)
 
   const { data: blockchainMatch, refetch: refetchMatch } = useMatchData(matchId)
 

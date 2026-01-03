@@ -13,6 +13,7 @@ interface MemoryMatchGameProps {
   opponent: string
   stake: string
   matchId: string
+  chainId: number
 }
 
 const CARD_PAIRS = [
@@ -30,7 +31,7 @@ const CARD_PAIRS = [
   { id: 12, emoji: "🌟" },
 ]
 
-export default function MemoryMatchGame({ account, opponent, stake, matchId }: MemoryMatchGameProps) {
+export default function MemoryMatchGame({ account, opponent, stake, matchId, chainId }: MemoryMatchGameProps) {
   const [gamePhase, setGamePhase] = useState<"playing" | "opponent-turn" | "results">("playing")
   const [cards, setCards] = useState<typeof CARD_PAIRS>([])
   const [flipped, setFlipped] = useState<number[]>([])
@@ -53,7 +54,7 @@ export default function MemoryMatchGame({ account, opponent, stake, matchId }: M
     submitScore: apiSubmitScore,
     submitWinner,
     error: apiError
-  } = useMatchApi(matchId, account)
+  } = useMatchApi(matchId, account, chainId)
 
   // Query blockchain match data to verify status before withdrawal
   const { data: blockchainMatch, refetch: refetchMatch } = useMatchData(matchId)
