@@ -21,8 +21,14 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (ignore in all packages) - IMPORTANT: contains private keys!
-
-
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+**/.env
+**/.env.*
+**/.env.local
 # vercel
 .vercel
 
