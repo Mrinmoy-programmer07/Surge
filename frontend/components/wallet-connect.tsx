@@ -102,7 +102,7 @@ export default function WalletConnect({ onConnect, onConnected }: WalletConnectP
           variant="outline"
           size="sm"
           onClick={handleDisconnect}
-          className="border-border hover:bg-card bg-transparent"
+          className="border-destructive/30 text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive/10"
         >
           Disconnect
         </Button>
@@ -114,9 +114,18 @@ export default function WalletConnect({ onConnect, onConnected }: WalletConnectP
     <Button
       onClick={handleConnect}
       disabled={isConnecting || status === "pending"}
-      className="bg-primary hover:bg-primary/90 text-primary-foreground"
+      variant="neon-cyan"
+      className={isConnecting || status === "pending" ? "opacity-70" : ""}
     >
-      {isConnecting || status === "pending" ? "Connecting..." : "Connect Wallet"}
+      {isConnecting || status === "pending" ? (
+        <span className="flex items-center gap-2">
+          <span className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          Connecting...
+        </span>
+      ) : (
+        "Connect Wallet"
+      )}
     </Button>
   )
 }
+

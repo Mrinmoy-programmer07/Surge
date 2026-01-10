@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Minimal gaming controller cursor - Cyberpunk style -->
+  <g fill="none" stroke="#00f0ff" stroke-width="1.5">
+    <!-- Controller body -->
+    <path d="M8 12 L24 12 Q28 12 28 16 L28 18 Q28 22 24 22 L20 22 L18 26 L14 26 L12 22 L8 22 Q4 22 4 18 L4 16 Q4 12 8 12 Z" fill="#0a0a0f" stroke="#00f0ff"/>
+    <!-- Left analog -->
+    <circle cx="11" cy="17" r="2" fill="#00f0ff" opacity="0.3"/>
+    <!-- Right analog -->
+    <circle cx="21" cy="17" r="2" fill="#00f0ff" opacity="0.3"/>
+    <!-- D-pad hint -->
+    <line x1="11" y1="15" x2="11" y2="19" stroke="#00f0ff" opacity="0.5"/>
+    <line x1="9" y1="17" x2="13" y2="17" stroke="#00f0ff" opacity="0.5"/>
+    <!-- Buttons hint -->
+    <circle cx="21" cy="15" r="0.8" fill="#00f0ff"/>
+    <circle cx="23" cy="17" r="0.8" fill="#ff0080"/>
+  </g>
+</svg>

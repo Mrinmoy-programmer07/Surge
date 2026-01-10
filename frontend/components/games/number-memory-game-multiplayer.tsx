@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { generateNumberSequence, calculateScore } from "@/lib/game-utils"
 import { useMatchApi } from "@/hooks/use-match-api"
 import { formatAddress } from "@/lib/game-utils"
 import { useSurgeContract } from "@/hooks/use-surge-contract"
+import GameResultCard from "@/components/ui/game-result-card"
 
 interface NumberMemoryGameProps {
   account: string
@@ -237,13 +239,15 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
           opponentFinalScore
         })
 
-        // Determine winner and submit to API only once
-        const winner = myFinalScore > opponentFinalScore ? account :
-          opponentFinalScore > myFinalScore ? opponent :
-            account // draw - default to account
+        // Determine winner - null for draw
+        const isDraw = myFinalScore === opponentFinalScore
+        const winner = isDraw ? null :
+          myFinalScore > opponentFinalScore ? account : opponent
 
-        console.log('📤 Calling submitWinner with winner:', winner)
-        submitWinner(winner)
+        console.log('📤 Calling submitWinner with winner:', winner, 'isDraw:', isDraw)
+        if (!isDraw) {
+          submitWinner(winner!)
+        }
         winnerSubmittedRef.current = true
       }
     }
@@ -287,12 +291,13 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
 
   if (apiError) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-card to-background py-8">
+      <div className="min-h-screen bg-background bg-cyber-grid py-8">
         <div className="container mx-auto px-4">
-          <Card className="max-w-2xl mx-auto p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4 text-red-500">Connection Error</h2>
-            <p className="text-muted-foreground mb-4">{apiError}</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+          <Card className="max-w-2xl mx-auto p-8 text-center border-destructive/30">
+            <div className="text-5xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold mb-4 text-destructive">Connection Error</h2>
+            <p className="text-muted-foreground mb-6">{apiError}</p>
+            <Button variant="neon-cyan" onClick={() => window.location.reload()}>Retry Connection</Button>
           </Card>
         </div>
       </div>
@@ -303,7 +308,6 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
     const winnerAddress = matchState?.winner
     const isWinner = winnerAddress === account
     const isDraw = myFinalScore === opponentFinalScore
-    const winnerText = isDraw ? "It's a Draw!" : isWinner ? "You Win! 🎉" : "Opponent Wins!"
 
     // Calculate winnings: 75% of total pot (2x stake)
     const totalPot = parseFloat(stake) * 2
@@ -313,102 +317,23 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
     const formattedFee = platformFee.toFixed(4)
 
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-card to-background py-8">
-        <div className="container mx-auto px-4">
-          <Card className="max-w-2xl mx-auto p-8 text-center">
-            <h2 className="text-4xl font-bold mb-4 text-center text-foreground">{winnerText}</h2>
-            <p className="text-xl text-center text-muted-foreground mb-4">
-              Final Score
-            </p>
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">You (Player 1)</p>
-                <p className="text-3xl font-bold text-primary">{myFinalScore ?? 0}</p>
-              </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">Opponent (Player 2)</p>
-                <p className="text-3xl font-bold text-secondary">{opponentFinalScore ?? 0}</p>
-              </div>
-            </div>
-
-            {/* Winnings Display */}
-            {isWinner && !isDraw && (
-              <div className="mb-6 p-4 bg-green-100 dark:bg-green-900/20 rounded-lg border-2 border-green-500">
-                <p className="text-lg font-semibold text-green-800 dark:text-green-400 mb-3">
-                  💰 You Won {formattedPayout} ETH!
-                </p>
-                <div className="text-sm text-green-700 dark:text-green-500 space-y-1">
-                  <p>Total Pot: {stake} + {stake} = {totalPot.toFixed(4)} ETH</p>
-                  <p>Platform Fee (25%): {formattedFee} ETH</p>
-                  <p className="font-bold text-base">Your Payout (75%): {formattedPayout} ETH</p>
-                </div>
-              </div>
-            )}
-
-            <div className="text-sm text-muted-foreground mb-8">
-              <p>Match ID: {matchId}</p>
-              <p>Game Status: {matchState.status}</p>
-              {withdrawTxHash && (
-                <p className="text-green-600 dark:text-green-400 mt-2">
-                  Withdrawal Tx: {withdrawTxHash.substring(0, 10)}...{withdrawTxHash.substring(withdrawTxHash.length - 8)}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3 items-center">
-              {/* Withdraw Button - For winner */}
-              {isWinner && !isDraw && !withdrawn && (
-                <Button
-                  onClick={() => handleWithdraw(false)}
-                  disabled={withdrawing || isWithdrawing}
-                  className="px-8 py-4 text-lg bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {(withdrawing || isWithdrawing) ? 'Confirming Transaction...' : `Withdraw ${formattedPayout} ETH`}
-                </Button>
-              )}
-
-              {/* Withdraw Button - For draw (both players can withdraw) */}
-              {isDraw && !withdrawn && (
-                <Button
-                  onClick={() => handleWithdraw(true)}
-                  disabled={withdrawing || isWithdrawingDraw}
-                  className="px-8 py-4 text-lg bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {(withdrawing || isWithdrawingDraw) ? 'Confirming Transaction...' : `Withdraw Stake (${stake} ETH)`}
-                </Button>
-              )}
-
-              {/* Already Withdrawn Message */}
-              {withdrawn && (
-                <div className="text-green-600 dark:text-green-400 font-semibold">
-                  ✅ Successfully Withdrawn {isDraw ? stake : formattedPayout} ETH!
-                  {withdrawTxHash && (
-                    <div className="text-xs mt-1">
-                      <a
-                        href={`https://sepolia.celoscan.io/tx/${withdrawTxHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline"
-                      >
-                        View Transaction
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Play Again Button */}
-              <Button
-                onClick={() => window.location.reload()}
-                className="px-8 py-4 text-lg"
-                variant="outline"
-              >
-                Play Again
-              </Button>
-            </div>
-          </Card>
-        </div>
-      </div>
+      <GameResultCard
+        isWinner={isWinner}
+        isDraw={isDraw}
+        myScore={myFinalScore ?? 0}
+        opponentScore={opponentFinalScore ?? 0}
+        opponentName={formatAddress(opponent)}
+        stake={stake}
+        winnerPayout={formattedPayout}
+        platformFee={formattedFee}
+        matchId={matchId}
+        matchStatus={matchState.status}
+        withdrawn={withdrawn}
+        withdrawing={withdrawing || isWithdrawing || isWithdrawingDraw}
+        withdrawTxHash={withdrawTxHash}
+        onWithdraw={handleWithdraw}
+        onPlayAgain={() => window.location.reload()}
+      />
     )
   }
 
@@ -416,34 +341,47 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
     const bothScoresReady = myFinalScore !== null && opponentFinalScore !== null
 
     return (
-      <div className="min-h-screen bg-linear-to-br from-background via-card to-background py-8">
+      <div className="min-h-screen bg-background bg-cyber-grid py-8">
         <div className="container mx-auto px-4">
-          <Card className="max-w-2xl mx-auto p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">
-              {bothScoresReady ? `Results in ${waitingTimer}s...` : "Waiting for Opponent..."}
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              {bothScoresReady ? "Both scores received!" : "Your score has been submitted."}
-            </p>
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">Your Score (Player 1)</p>
-                <p className="text-3xl font-bold text-primary">{myFinalScore ?? 0}</p>
+          <Card className="max-w-2xl mx-auto p-8 text-center border-primary/20">
+            {/* Countdown or Waiting */}
+            {bothScoresReady ? (
+              <>
+                <div className="text-7xl font-bold text-primary text-glow-cyan mb-4 animate-pulse">
+                  {waitingTimer}
+                </div>
+                <p className="text-muted-foreground">Calculating results...</p>
+              </>
+            ) : (
+              <>
+                <div className="relative mx-auto w-16 h-16 mb-6">
+                  <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2 text-foreground">Waiting for Opponent...</h2>
+                <p className="text-muted-foreground">Your score has been submitted</p>
+              </>
+            )}
+
+            {/* Score Cards */}
+            <div className="grid grid-cols-2 gap-4 my-8">
+              <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
+                <p className="text-xs text-muted-foreground mb-1 uppercase">Your Score</p>
+                <p className="text-4xl font-bold text-primary text-glow-cyan">{myFinalScore ?? 0}</p>
               </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">Opponent Score (Player 2)</p>
+              <div className="p-4 rounded-lg border border-secondary/30 bg-secondary/5">
+                <p className="text-xs text-muted-foreground mb-1 uppercase">Opponent</p>
                 {opponentFinalScore !== null ? (
-                  <p className="text-3xl font-bold text-secondary">{opponentFinalScore}</p>
+                  <p className="text-4xl font-bold text-secondary">{opponentFinalScore}</p>
                 ) : (
-                  <div className="text-3xl font-bold text-muted-foreground animate-pulse">...</div>
+                  <div className="flex justify-center gap-1">
+                    <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
                 )}
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {bothScoresReady
-                ? `Calculating winner...`
-                : "Waiting for opponent to finish their turn..."}
-            </p>
           </Card>
         </div>
       </div>
@@ -451,79 +389,88 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-card to-background py-8">
+    <div className="min-h-screen bg-background bg-cyber-grid py-8">
       <div className="container mx-auto px-4">
-        <Card className="max-w-4xl mx-auto p-8">
-          <h2 className="text-3xl font-bold text-center mb-6">Number Memory</h2>
+        <Card className="max-w-4xl mx-auto p-8 border-primary/20">
+          {/* Game Title */}
+          <h2 className="text-3xl font-bold text-center mb-2 text-foreground">
+            🔢 <span className="text-gradient-cyber">Number Memory</span>
+          </h2>
+          <p className="text-sm text-center text-muted-foreground mb-6">Memorize and repeat the sequence</p>
 
-          <div className="grid grid-cols-2 gap-4 text-center mb-6">
-            <div>
-              <p className="text-lg text-muted-foreground">Player 1 (You)</p>
-              <p className="text-4xl font-bold text-primary">{myFinalScore ?? '—'}</p>
-              <p className="text-xs text-muted-foreground">Your Score</p>
+          {/* Score Display */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">You</p>
+              <p className="text-3xl font-bold text-primary text-glow-cyan">{myFinalScore ?? '—'}</p>
             </div>
-            <div>
-              <p className="text-lg text-muted-foreground">Player 2 (Opponent)</p>
-              <p className="text-4xl font-bold text-secondary">{opponentFinalScore ?? '—'}</p>
-              <p className="text-xs text-muted-foreground">Opponent Score</p>
+            <div className="p-3 rounded-lg border border-secondary/30 bg-secondary/5 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Opponent</p>
+              <p className="text-3xl font-bold text-secondary">{opponentFinalScore ?? '—'}</p>
             </div>
           </div>
 
+          {/* Display Phase - Showing Numbers */}
           {gamePhase === "display" && (
             <div className="text-center mb-8">
-              <div className="flex items-center justify-center h-48 bg-muted rounded-lg">
-                <p className="text-6xl font-bold text-foreground animate-fade-in">
+              {/* Number Display Box */}
+              <div className="relative flex items-center justify-center h-48 rounded-lg border-2 border-primary/40 bg-black/50 shadow-[0_0_30px_rgba(0,240,255,0.2)] mb-4">
+                <p className="text-8xl font-bold text-primary text-glow-cyan animate-pulse">
                   {sequence[displayIndex]}
                 </p>
               </div>
-              {/* Progress indicator */}
-              <div className="flex justify-center gap-2 mt-4">
+
+              {/* Progress Dots */}
+              <div className="flex justify-center gap-3 mb-3">
                 {sequence.map((_, index) => (
                   <div
                     key={index}
-                    className={`w-2 h-2 rounded-full ${index <= displayIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${index <= displayIndex
+                      ? 'bg-primary shadow-[0_0_8px_rgba(0,240,255,0.6)]'
+                      : 'bg-muted-foreground/30'
                       }`}
                   />
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Memorize the numbers... ({displayIndex + 1}/{sequence.length})
+              <p className="text-sm text-primary">
+                Memorize... ({displayIndex + 1}/{sequence.length})
               </p>
             </div>
           )}
 
+          {/* Input Phase */}
           {gamePhase === "input" && isMyTurn && (
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold mb-4">Your turn!</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Click the numbers in the correct order from memory
+              <h3 className="text-xl font-bold mb-2 text-accent text-glow-green">Your Turn!</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Click the numbers in the correct order
               </p>
 
               {/* Number Grid */}
-              <div className="grid grid-cols-5 gap-4 max-w-md mx-auto mb-4">
+              <div className="grid grid-cols-5 gap-3 max-w-md mx-auto mb-6">
                 {scrambledInputs.map((num, index) => (
                   <Button
                     key={`${num}-${index}`}
                     onClick={() => handleNumberClick(num)}
-                    className="w-16 h-16 text-xl font-bold"
                     variant="outline"
+                    className="w-14 h-14 text-xl font-bold hover:border-primary hover:text-primary hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all"
                   >
                     {num}
                   </Button>
                 ))}
               </div>
 
-              {/* Current Input */}
+              {/* Current Input Display */}
               <div className="mb-4">
-                <p className="text-sm text-muted-foreground mb-2">Your input:</p>
-                <div className="flex justify-center gap-2 min-h-8">
+                <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">Your Sequence</p>
+                <div className="flex justify-center gap-2 min-h-10">
                   {playerInput.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No numbers entered yet</p>
+                    <p className="text-sm text-muted-foreground italic">Click numbers above...</p>
                   ) : (
                     playerInput.map((num, index) => (
                       <div
                         key={index}
-                        className="w-8 h-8 bg-primary text-primary-foreground rounded flex items-center justify-center text-sm font-bold"
+                        className="w-10 h-10 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold shadow-[0_0_10px_rgba(0,240,255,0.4)] anim-fade-in-scale"
                       >
                         {num}
                       </div>
@@ -534,24 +481,26 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
             </div>
           )}
 
+          {/* Waiting for opponent's turn */}
           {gamePhase === "input" && !isMyTurn && (
-            <div className="flex items-center justify-center h-48 bg-muted rounded-lg mb-8">
-              <p className="text-2xl font-semibold text-muted-foreground animate-pulse">
-                Waiting for opponent's input...
-              </p>
+            <div className="flex flex-col items-center justify-center h-48 rounded-lg border border-border bg-card/50 mb-8">
+              <div className="flex gap-1 mb-4">
+                <div className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <p className="text-lg text-muted-foreground">Waiting for opponent...</p>
             </div>
           )}
 
           {/* Connection Status */}
-          <div className="text-center text-sm text-muted-foreground">
-            <div className={`inline-flex items-center px-3 py-1 rounded-full ${matchState.status === 'in_progress' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-              }`}>
-              <div className={`w-2 h-2 rounded-full mr-2 ${matchState.status === 'in_progress' ? 'bg-green-500' : 'bg-yellow-500'
-                }`}></div>
+          <div className="flex items-center justify-center gap-3">
+            <Badge variant={matchState.status === 'in_progress' ? 'neon-green' : 'neon-orange'} className="gap-2">
+              <div className={`w-2 h-2 rounded-full ${matchState.status === 'in_progress' ? 'bg-accent animate-pulse' : 'bg-warning'}`} />
               {matchState.status === 'in_progress' ? 'Active' : 'Waiting'}
-            </div>
+            </Badge>
             {isMyTurn && gamePhase === "input" && (
-              <span className="ml-4 text-blue-600">• Your Turn</span>
+              <Badge variant="neon-cyan">Your Turn</Badge>
             )}
           </div>
         </Card>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useGameState } from "@/lib/game-state-context"
 import { useMatchApi } from "@/hooks/use-match-api"
 import { useSurgeContract, useMatchData } from "@/hooks/use-surge-contract"
@@ -237,34 +238,36 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
   const winner = playerScore > opponentScore ? "You" : opponentScore > playerScore ? "Opponent" : "Draw"
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-card to-background py-8">
+    <div className="min-h-screen bg-background bg-cyber-grid py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 p-4 rounded-lg border border-primary/20 bg-card/50 backdrop-blur-sm">
           <div className="text-center flex-1">
-            <p className="text-sm text-muted-foreground mb-1">You</p>
-            <p className="text-2xl font-bold text-primary">{playerScore}</p>
+            <p className="text-xs text-muted-foreground uppercase mb-1">You</p>
+            <p className="text-3xl font-bold text-primary text-glow-cyan">{playerScore}</p>
           </div>
           <div className="text-center flex-1">
-            <p className="text-lg font-bold text-foreground">Reflex War</p>
+            <h2 className="text-xl font-bold text-foreground">⚡ <span className="text-gradient-cyber">Reflex War</span></h2>
             <p className="text-sm text-muted-foreground">Round {round} / 5</p>
           </div>
           <div className="text-center flex-1">
-            <p className="text-sm text-muted-foreground mb-1">Opponent</p>
-            <p className="text-2xl font-bold text-secondary">{opponentScore}</p>
+            <p className="text-xs text-muted-foreground uppercase mb-1">Opponent</p>
+            <p className="text-3xl font-bold text-secondary">{opponentScore}</p>
           </div>
         </div>
 
         {/* Main Game Area */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Player 1 - You */}
-          <Card className="p-8 border-border">
-            <h3 className="text-lg font-bold mb-6 text-foreground">Your Turn</h3>
+          <Card className="p-8 border-primary/20">
+            <h3 className="text-lg font-bold mb-6 text-foreground flex items-center gap-2">
+              <Badge variant="neon-cyan">Your Turn</Badge>
+            </h3>
 
             {gamePhase === "waiting" && (
               <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">Get ready...</p>
-                <div className="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto">
+                <p className="text-primary animate-pulse mb-4">Get ready...</p>
+                <div className="w-24 h-24 bg-warning/20 border-2 border-warning/50 rounded-full flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(255,168,0,0.3)]">
                   <span className="text-4xl">⏳</span>
                 </div>
               </div>
@@ -274,9 +277,10 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
               <div className="text-center py-12">
                 <Button
                   onClick={handleClick}
-                  className="w-full h-32 bg-primary hover:bg-primary/90 text-primary-foreground text-2xl font-bold rounded-xl"
+                  variant="neon-green"
+                  className="w-full h-32 text-2xl font-bold rounded-xl shadow-[0_0_30px_rgba(57,255,20,0.5)] animate-pulse"
                 >
-                  CLICK!
+                  ⚡ CLICK!
                 </Button>
                 <p className="text-muted-foreground mt-4">Click as fast as you can!</p>
               </div>
@@ -284,75 +288,85 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
 
             {gamePhase === "opponent-turn" && playerReactionTime && (
               <div className="text-center py-12">
-                <p className="text-4xl font-bold text-primary mb-2">{playerReactionTime}ms</p>
-                <p className="text-muted-foreground">Your reaction time</p>
+                <p className="text-5xl font-bold text-primary text-glow-cyan mb-2">{playerReactionTime}ms</p>
+                <p className="text-sm text-muted-foreground">Your reaction time</p>
               </div>
             )}
 
             {gamePhase === "results" && (
               <div className="text-center py-12">
-                <p className="text-4xl font-bold text-primary mb-2">{playerScore}</p>
-                <p className="text-muted-foreground">Rounds won</p>
+                <p className="text-5xl font-bold text-primary text-glow-cyan mb-2">{playerScore}</p>
+                <p className="text-sm text-muted-foreground">Rounds won</p>
               </div>
             )}
           </Card>
 
           {/* Player 2 - Opponent */}
-          <Card className="p-8 border-border">
-            <h3 className="text-lg font-bold mb-6 text-foreground">Opponent</h3>
+          <Card className="p-8 border-secondary/20">
+            <h3 className="text-lg font-bold mb-6 text-foreground flex items-center gap-2">
+              <Badge variant="neon-pink">Opponent</Badge>
+            </h3>
 
             {gamePhase === "opponent-turn" && opponentReactionTime && (
               <div className="text-center py-12">
-                <p className="text-4xl font-bold text-secondary mb-2">{opponentReactionTime}ms</p>
-                <p className="text-muted-foreground">Opponent reaction time</p>
+                <p className="text-5xl font-bold text-secondary mb-2">{opponentReactionTime}ms</p>
+                <p className="text-sm text-muted-foreground">Opponent reaction time</p>
               </div>
             )}
 
             {gamePhase === "results" && (
               <div className="text-center py-12">
-                <p className="text-4xl font-bold text-secondary mb-2">{opponentScore}</p>
-                <p className="text-muted-foreground">Rounds won</p>
+                <p className="text-5xl font-bold text-secondary mb-2">{opponentScore}</p>
+                <p className="text-sm text-muted-foreground">Rounds won</p>
               </div>
             )}
 
             {gamePhase !== "opponent-turn" && gamePhase !== "results" && (
-              <div className="text-center py-12 text-muted-foreground">Waiting for your turn...</div>
+              <div className="text-center py-12">
+                <div className="w-12 h-12 rounded-full border-2 border-secondary/30 bg-secondary/5 mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-secondary text-xl">?</span>
+                </div>
+                <p className="text-muted-foreground">Waiting for you...</p>
+              </div>
             )}
           </Card>
         </div>
 
         {/* Results */}
         {gamePhase === "results" && (
-          <Card className="p-8 border-border text-center">
-            <h2 className="text-3xl font-bold mb-4 text-foreground">
-              {winner === "Draw" ? "It's a Draw!" : `${winner} Won!`}
+          <Card className={`p-8 text-center ${winner === 'You' ? 'border-accent/50' : winner === 'Draw' ? 'border-warning/50' : 'border-secondary/50'}`}>
+            <h2 className={`text-4xl font-bold mb-4 ${winner === 'You' ? 'text-accent text-glow-green' : winner === 'Draw' ? 'text-warning' : 'text-secondary'}`}>
+              {winner === "Draw" ? "It's a Draw!" : winner === "You" ? "🎉 Victory!" : "Defeat"}
             </h2>
 
             {!withdrawn && !withdrawTxHash && (
               <>
                 {!blockchainMatchReady && (
                   <div className="mb-6">
-                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary mb-2"></div>
-                    <p className="text-sm text-muted-foreground">Waiting for blockchain confirmation...</p>
+                    <div className="relative mx-auto w-8 h-8 mb-3">
+                      <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Syncing with blockchain...</p>
                   </div>
                 )}
 
-                <p className="text-muted-foreground mb-8">
-                  {winner === "You"
-                    ? `You won! Claim ${(parseFloat(stake) * 2 * 0.75).toFixed(4)} ETH (75% of ${(parseFloat(stake) * 2).toFixed(4)} ETH pot)`
-                    : winner === "Draw"
-                      ? `Match ended in a tie! Both players get their ${stake} ETH stake back`
-                      : `You lost this round`}
-                </p>
+                {winner === "You" && (
+                  <p className="text-xl font-bold text-accent text-glow-green mb-6">
+                    💰 +{(parseFloat(stake) * 2 * 0.75).toFixed(4)} ETH
+                  </p>
+                )}
 
                 <div className="flex gap-4 justify-center">
                   {winner === "You" && (
                     <Button
                       onClick={() => handleWithdraw(false)}
                       disabled={!blockchainMatchReady || isWithdrawing || withdrawing}
-                      className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                      variant="neon-green"
+                      size="lg"
+                      className="shadow-[0_0_20px_rgba(57,255,20,0.4)]"
                     >
-                      {isWithdrawing || withdrawing ? "Processing..." : blockchainMatchReady ? "💰 Withdraw Winnings" : "⏳ Preparing..."}
+                      {isWithdrawing || withdrawing ? "Processing..." : blockchainMatchReady ? "💎 Withdraw" : "⏳ Preparing..."}
                     </Button>
                   )}
 
@@ -360,17 +374,14 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
                     <Button
                       onClick={() => handleWithdraw(true)}
                       disabled={!blockchainMatchReady || isWithdrawingDraw || withdrawing}
-                      className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                      variant="neon-cyan"
+                      size="lg"
                     >
-                      {isWithdrawingDraw || withdrawing ? "Processing..." : blockchainMatchReady ? "↩️ Claim Stake Back" : "⏳ Preparing..."}
+                      {isWithdrawingDraw || withdrawing ? "Processing..." : blockchainMatchReady ? "↩️ Claim Stake" : "⏳ Preparing..."}
                     </Button>
                   )}
 
-                  <Button
-                    variant="outline"
-                    onClick={() => (window.location.href = "/")}
-                    className="border-border hover:bg-card"
-                  >
+                  <Button variant="outline" onClick={() => (window.location.href = "/")}>
                     Back to Lobby
                   </Button>
                 </div>
@@ -379,27 +390,27 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
 
             {(withdrawing || isWithdrawing || isWithdrawingDraw) && !withdrawn && (
               <div className="text-center py-4">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-                <p className="text-muted-foreground">Confirming withdrawal on blockchain...</p>
+                <div className="relative mx-auto w-10 h-10 mb-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+                </div>
+                <p className="text-muted-foreground">Confirming on blockchain...</p>
               </div>
             )}
 
             {withdrawn && withdrawTxHash && (
-              <div className="text-center py-4">
-                <p className="text-green-600 font-bold mb-4">✅ Withdrawal Successful!</p>
+              <div className="p-4 bg-accent/10 border border-accent/30 rounded-lg">
+                <p className="text-accent font-bold text-glow-green mb-2">✅ Withdrawal Successful!</p>
                 <a
-                  href={`https://celo-sepolia.blockscout.com/tx/${withdrawTxHash}`}
+                  href={`https://sepolia.arbiscan.io/tx/${withdrawTxHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline text-sm"
                 >
-                  View transaction on Blockscout →
+                  View on Explorer →
                 </a>
-                <div className="mt-6">
-                  <Button
-                    onClick={() => (window.location.href = "/")}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
+                <div className="mt-4">
+                  <Button onClick={() => (window.location.href = "/")} variant="neon-cyan">
                     Back to Lobby
                   </Button>
                 </div>

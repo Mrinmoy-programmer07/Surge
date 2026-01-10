@@ -20,7 +20,17 @@ const nextConfig = {
         net: false,
         tls: false,
       };
+      // Handle MetaMask SDK react-native dependency
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@react-native-async-storage/async-storage': false,
+      };
     }
+    // Handle pino-pretty warning
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'pino-pretty': false,
+    };
     return config;
   },
 }

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { useGameState } from "@/lib/game-state-context"
 import { useMatchApi } from "@/hooks/use-match-api"
 import { useSurgeContract, useMatchData } from "@/hooks/use-surge-contract"
@@ -267,159 +269,180 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
   const winner = playerScore > opponentScore ? "You" : opponentScore > playerScore ? "Opponent" : "Draw"
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-card to-background py-8">
+    <div className="min-h-screen bg-background bg-cyber-grid py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 p-4 rounded-lg border border-primary/20 bg-card/50 backdrop-blur-sm">
           <div className="text-center flex-1">
-            <p className="text-sm text-muted-foreground mb-1">You</p>
-            <p className="text-2xl font-bold text-primary">{playerScore}</p>
+            <p className="text-xs text-muted-foreground uppercase mb-1">You</p>
+            <p className="text-3xl font-bold text-primary text-glow-cyan">{playerScore}</p>
           </div>
           <div className="text-center flex-1">
-            <p className="text-lg font-bold text-foreground">Word Scramble Duel</p>
+            <h2 className="text-xl font-bold text-foreground">🔤 <span className="text-gradient-cyber">Word Scramble</span></h2>
             <p className="text-sm text-muted-foreground">
-              {wordsCompleted} / {WORD_LIST.length}
+              {wordsCompleted} / {WORD_LIST.length} words
             </p>
           </div>
           <div className="text-center flex-1">
-            <p className="text-sm text-muted-foreground mb-1">Opponent</p>
-            <p className="text-2xl font-bold text-secondary">{opponentScore}</p>
+            <p className="text-xs text-muted-foreground uppercase mb-1">Opponent</p>
+            <p className="text-3xl font-bold text-secondary">{opponentScore}</p>
           </div>
         </div>
 
         {/* Main Game Area */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Player 1 - You */}
-          <Card className="p-8 border-border">
-            <h3 className="text-lg font-bold mb-6 text-foreground">Your Turn</h3>
+          <Card className="p-8 border-primary/20">
+            <h3 className="text-lg font-bold mb-6 text-foreground flex items-center gap-2">
+              <Badge variant="neon-cyan">Your Turn</Badge>
+            </h3>
 
             {(gamePhase === "display" || gamePhase === "input") && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-4">Unscramble the word:</p>
-                  <p className="text-4xl font-bold tracking-widest text-primary mb-4 font-mono">
-                    {currentWord.scrambled}
-                  </p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-4">Unscramble the word:</p>
+                  <div className="p-6 rounded-lg border-2 border-secondary/40 bg-black/50 shadow-[0_0_25px_rgba(255,0,128,0.2)] mb-4">
+                    <p className="text-4xl font-bold tracking-[0.5em] text-secondary text-glow-pink font-mono">
+                      {currentWord.scrambled}
+                    </p>
+                  </div>
                 </div>
 
                 {gamePhase === "input" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-muted-foreground">Time: {gameTime}s</p>
+                      <Badge variant={gameTime <= 10 ? 'destructive' : 'neon-orange'}>
+                        ⏱️ {gameTime}s
+                      </Badge>
                       <p className="text-sm text-muted-foreground">
-                        Word {currentWordIndex + 1} of {WORD_LIST.length}
+                        Word {currentWordIndex + 1} / {WORD_LIST.length}
                       </p>
                     </div>
-                    <input
+                    <Input
                       type="text"
                       value={playerInput}
                       onChange={(e) => setPlayerInput(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
                       placeholder="Type your answer..."
-                      className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="text-center text-xl font-mono uppercase"
                       autoFocus
                     />
                     <Button
                       onClick={handleSubmit}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                      variant="neon-cyan"
+                      className="w-full"
                     >
-                      Submit
+                      Submit Answer
                     </Button>
 
                     {feedback && (
                       <div
-                        className={`text-center py-2 rounded-lg font-bold ${feedback === "correct" ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"
+                        className={`text-center py-3 rounded-lg font-bold ${feedback === "correct"
+                          ? "bg-accent/20 text-accent border border-accent/30"
+                          : "bg-destructive/20 text-destructive border border-destructive/30"
                           }`}
                       >
-                        {feedback === "correct" ? "Correct!" : "Incorrect!"}
+                        {feedback === "correct" ? "✓ Correct!" : "✗ Incorrect!"}
                       </div>
                     )}
                   </div>
                 )}
 
-                {gamePhase === "display" && <p className="text-center text-muted-foreground">Get ready...</p>}
+                {gamePhase === "display" && (
+                  <p className="text-center text-primary animate-pulse">Get ready...</p>
+                )}
               </div>
             )}
 
             {gamePhase === "opponent-turn" && (
               <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">Opponent is playing...</p>
-                <div className="inline-block">
-                  <div className="animate-spin">
-                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
-                  </div>
+                <div className="flex gap-1 justify-center mb-4">
+                  <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
+                <p className="text-muted-foreground">Waiting for opponent...</p>
               </div>
             )}
 
             {gamePhase === "results" && (
               <div className="text-center py-12">
-                <p className="text-4xl font-bold text-primary mb-2">{playerScore}</p>
-                <p className="text-muted-foreground">Words unscrambled</p>
+                <p className="text-5xl font-bold text-primary text-glow-cyan mb-2">{playerScore}</p>
+                <p className="text-sm text-muted-foreground">Words solved</p>
               </div>
             )}
           </Card>
 
           {/* Player 2 - Opponent */}
-          <Card className="p-8 border-border">
-            <h3 className="text-lg font-bold mb-6 text-foreground">Opponent</h3>
+          <Card className="p-8 border-secondary/20">
+            <h3 className="text-lg font-bold mb-6 text-foreground flex items-center gap-2">
+              <Badge variant="neon-pink">Opponent</Badge>
+            </h3>
 
             {gamePhase === "opponent-turn" && (
               <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">Playing...</p>
-                <div className="inline-block">
-                  <div className="animate-spin">
-                    <div className="w-12 h-12 border-4 border-secondary border-t-transparent rounded-full"></div>
-                  </div>
+                <div className="flex gap-1 justify-center mb-4">
+                  <div className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
+                <p className="text-muted-foreground">Playing...</p>
               </div>
             )}
 
             {gamePhase === "results" && (
               <div className="text-center py-12">
-                <p className="text-4xl font-bold text-secondary mb-2">{opponentScore}</p>
-                <p className="text-muted-foreground">Words unscrambled</p>
+                <p className="text-5xl font-bold text-secondary mb-2">{opponentScore}</p>
+                <p className="text-sm text-muted-foreground">Words solved</p>
               </div>
             )}
 
             {gamePhase !== "opponent-turn" && gamePhase !== "results" && (
-              <div className="text-center py-12 text-muted-foreground">Waiting for your turn to complete...</div>
+              <div className="text-center py-12">
+                <div className="w-12 h-12 rounded-full border-2 border-secondary/30 bg-secondary/5 mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-secondary text-xl">?</span>
+                </div>
+                <p className="text-muted-foreground">Waiting for you...</p>
+              </div>
             )}
           </Card>
         </div>
 
         {/* Results */}
         {gamePhase === "results" && (
-          <Card className="p-8 border-border text-center">
-            <h2 className="text-3xl font-bold mb-4 text-foreground">
-              {winner === "Draw" ? "It's a Draw!" : `${winner} Won!`}
+          <Card className={`p-8 text-center ${winner === 'You' ? 'border-accent/50' : winner === 'Draw' ? 'border-warning/50' : 'border-secondary/50'}`}>
+            <h2 className={`text-4xl font-bold mb-4 ${winner === 'You' ? 'text-accent text-glow-green' : winner === 'Draw' ? 'text-warning' : 'text-secondary'}`}>
+              {winner === "Draw" ? "It's a Draw!" : winner === "You" ? "🎉 Victory!" : "Defeat"}
             </h2>
 
             {!withdrawn && !withdrawTxHash && (
               <>
                 {!blockchainMatchReady && (
                   <div className="mb-6">
-                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary mb-2"></div>
-                    <p className="text-sm text-muted-foreground">Waiting for blockchain confirmation...</p>
+                    <div className="relative mx-auto w-8 h-8 mb-3">
+                      <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Syncing with blockchain...</p>
                   </div>
                 )}
 
-                <p className="text-muted-foreground mb-8">
-                  {winner === "You"
-                    ? `You won! Claim ${(parseFloat(stake) * 2 * 0.75).toFixed(4)} ETH (75% of ${(parseFloat(stake) * 2).toFixed(4)} ETH pot)`
-                    : winner === "Draw"
-                      ? `Match ended in a tie! Both players get their ${stake} ETH stake back`
-                      : `You lost this round`}
-                </p>
+                {winner === "You" && (
+                  <p className="text-xl font-bold text-accent text-glow-green mb-6">
+                    💰 +{(parseFloat(stake) * 2 * 0.75).toFixed(4)} ETH
+                  </p>
+                )}
 
                 <div className="flex gap-4 justify-center">
                   {winner === "You" && (
                     <Button
                       onClick={() => handleWithdraw(false)}
                       disabled={!blockchainMatchReady || isWithdrawing || withdrawing}
-                      className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                      variant="neon-green"
+                      size="lg"
+                      className="shadow-[0_0_20px_rgba(57,255,20,0.4)]"
                     >
-                      {isWithdrawing || withdrawing ? "Processing..." : blockchainMatchReady ? "💰 Withdraw Winnings" : "⏳ Preparing..."}
+                      {isWithdrawing || withdrawing ? "Processing..." : blockchainMatchReady ? "💎 Withdraw" : "⏳ Preparing..."}
                     </Button>
                   )}
 
@@ -427,16 +450,16 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
                     <Button
                       onClick={() => handleWithdraw(true)}
                       disabled={!blockchainMatchReady || isWithdrawingDraw || withdrawing}
-                      className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                      variant="neon-cyan"
+                      size="lg"
                     >
-                      {isWithdrawingDraw || withdrawing ? "Processing..." : blockchainMatchReady ? "↩️ Claim Stake Back" : "⏳ Preparing..."}
+                      {isWithdrawingDraw || withdrawing ? "Processing..." : blockchainMatchReady ? "↩️ Claim Stake" : "⏳ Preparing..."}
                     </Button>
                   )}
 
                   <Button
                     variant="outline"
                     onClick={() => (window.location.href = "/")}
-                    className="border-border hover:bg-card"
                   >
                     Back to Lobby
                   </Button>
@@ -446,26 +469,29 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
 
             {(withdrawing || isWithdrawing || isWithdrawingDraw) && !withdrawn && (
               <div className="text-center py-4">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-                <p className="text-muted-foreground">Confirming withdrawal on blockchain...</p>
+                <div className="relative mx-auto w-10 h-10 mb-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+                </div>
+                <p className="text-muted-foreground">Confirming on blockchain...</p>
               </div>
             )}
 
             {withdrawn && withdrawTxHash && (
-              <div className="text-center py-4">
-                <p className="text-green-600 font-bold mb-4">✅ Withdrawal Successful!</p>
+              <div className="p-4 bg-accent/10 border border-accent/30 rounded-lg">
+                <p className="text-accent font-bold text-glow-green mb-2">✅ Withdrawal Successful!</p>
                 <a
-                  href={`https://celo-sepolia.blockscout.com/tx/${withdrawTxHash}`}
+                  href={`https://sepolia.arbiscan.io/tx/${withdrawTxHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline text-sm"
                 >
-                  View transaction on Blockscout →
+                  View on Explorer →
                 </a>
-                <div className="mt-6">
+                <div className="mt-4">
                   <Button
                     onClick={() => (window.location.href = "/")}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    variant="neon-cyan"
                   >
                     Back to Lobby
                   </Button>

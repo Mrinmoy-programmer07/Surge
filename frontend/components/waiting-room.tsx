@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import type { GameType } from "@/lib/game-types"
 import { formatAddress } from "@/lib/game-utils"
 import { useWebSocketMatchmaking } from "@/hooks/use-websocket-matchmaking"
@@ -77,7 +79,7 @@ export default function WaitingRoom({ gameType, stake, account, matchId, onGameS
   if (!address) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="w-full max-w-2xl p-8 border-border">
+        <Card className="w-full max-w-2xl p-8 border-primary/20 bg-card/80 backdrop-blur-sm">
           <h2 className="text-2xl font-bold mb-8 text-center text-foreground">Connect Your Wallet</h2>
           <p className="text-center text-muted-foreground">
             Please connect your wallet to start matchmaking
@@ -90,15 +92,20 @@ export default function WaitingRoom({ gameType, stake, account, matchId, onGameS
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="w-full max-w-2xl p-8 border-border">
-          <h2 className="text-2xl font-bold mb-8 text-center text-red-500">Connection Error</h2>
+        <Card className="w-full max-w-2xl p-8 border-destructive/30 bg-card/80 backdrop-blur-sm">
+          <h2 className="text-2xl font-bold mb-8 text-center text-destructive">Connection Error</h2>
           <p className="text-center text-muted-foreground mb-4">{error}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
-          {isSearching && (
-            <button className="mt-4 bg-gray-200 text-red-500 px-4 py-2 rounded" onClick={() => { leaveQueue(); router.refresh ? router.refresh() : window.location.reload(); }}>
-              Leave Queue
-            </button>
-          )}
+          <div className="flex gap-3 justify-center">
+            <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
+            {isSearching && (
+              <Button
+                variant="destructive"
+                onClick={() => { leaveQueue(); router.refresh ? router.refresh() : window.location.reload(); }}
+              >
+                Leave Queue
+              </Button>
+            )}
+          </div>
         </Card>
       </div>
     )
@@ -106,82 +113,107 @@ export default function WaitingRoom({ gameType, stake, account, matchId, onGameS
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <Card className="w-full max-w-2xl p-8 border-border">
-        <h2 className="text-2xl font-bold mb-8 text-center text-foreground">
-          {opponent
-            ? "Match Found!"
+      <Card className="w-full max-w-2xl p-8 border-primary/20 bg-card/80 backdrop-blur-sm">
+        {/* Title with animated glow */}
+        <h2 className={`text-2xl font-bold mb-8 text-center ${opponent
+            ? "text-accent text-glow-green"
             : isSearching
-              ? "Searching for Opponent..."
-              : "Connecting..."}
+              ? "text-primary text-glow-cyan animate-pulse"
+              : "text-foreground"
+          }`}>
+          {opponent
+            ? "⚔️ Match Found!"
+            : isSearching
+              ? "🔍 Searching for Opponent..."
+              : "🔌 Connecting..."}
         </h2>
 
-        {/* Connection Status */}
-        <div className="text-center mb-4">
-          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${isConnected ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-            }`}>
-            <div className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-yellow-500'
-              }`}></div>
+        {/* Connection Status Badges */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <Badge
+            variant={isConnected ? "neon-green" : "neon-orange"}
+            className="gap-2"
+          >
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-accent animate-pulse' : 'bg-warning'
+              }`} />
             {isConnected ? 'Connected' : 'Connecting...'}
-          </div>
+          </Badge>
 
-          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ml-2 ${gameConnected ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-            }`}>
-            <div className={`w-2 h-2 rounded-full mr-2 ${gameConnected ? 'bg-blue-500' : 'bg-gray-500'
-              }`}></div>
+          <Badge
+            variant={gameConnected ? "neon-cyan" : "outline"}
+            className="gap-2"
+          >
+            <div className={`w-2 h-2 rounded-full ${gameConnected ? 'bg-primary animate-pulse' : 'bg-muted-foreground'
+              }`} />
             Game: {gameConnected ? 'Ready' : 'Waiting'}
-          </div>
+          </Badge>
 
           {/* Match ID Display */}
           {wsMatchId && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              Match ID: <span className="font-mono">{wsMatchId.slice(-8)}</span>
-            </div>
+            <Badge variant="outline" className="font-mono text-xs">
+              Match: {wsMatchId.slice(-8)}
+            </Badge>
           )}
         </div>
 
-        {/* Players */}
-        <div className="grid grid-cols-2 gap-8 mb-8">
-          {/* Player 1 */}
+        {/* Players Section */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {/* Player 1 (You) */}
           <div className="text-center">
-            <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">👤</span>
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/20 border-2 border-primary/50 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-300">
+              <span className="text-3xl">👤</span>
             </div>
-            <p className="font-mono text-sm text-primary mb-2">{formatAddress(address)}</p>
-            <p className="text-xs text-muted-foreground">You</p>
-            <p className="text-xs text-green-600 mt-1">✓ Stake Paid</p>
+            <p className="font-mono text-sm text-primary mb-1">{formatAddress(address)}</p>
+            <Badge variant="neon-cyan" className="text-xs">You</Badge>
+            <p className="text-xs text-accent mt-2">✓ Stake Paid</p>
           </div>
 
-          {/* VS */}
+          {/* VS Display */}
           <div className="flex items-center justify-center">
             <div className="text-center">
-              <p className="text-2xl font-bold text-muted-foreground mb-2">VS</p>
-              <p className="text-xs text-muted-foreground">Stake: {stake} ETH</p>
+              <div className={`text-4xl font-bold mb-2 ${opponent
+                  ? "text-gradient-cyber"
+                  : "text-muted-foreground"
+                }`}>
+                VS
+              </div>
+              <div className="px-3 py-1 bg-warning/10 border border-warning/30 rounded-lg">
+                <p className="text-xs text-muted-foreground">Stake</p>
+                <p className="text-sm font-bold text-warning">{stake} ETH</p>
+              </div>
             </div>
           </div>
 
-          {/* Player 2 */}
-          <div className="text-center col-span-2 md:col-span-1">
+          {/* Player 2 (Opponent) */}
+          <div className="text-center">
             {opponent ? (
               <>
-                <div className="w-20 h-20 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">👤</span>
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-secondary/20 border-2 border-secondary/50 flex items-center justify-center shadow-[0_0_20px_rgba(255,0,128,0.3)] transition-all duration-300 anim-fade-in-scale">
+                  <span className="text-3xl">👤</span>
                 </div>
-                <p className="font-mono text-sm text-secondary mb-2">{formatAddress(opponent)}</p>
-                <p className="text-xs text-muted-foreground">Opponent</p>
+                <p className="font-mono text-sm text-secondary mb-1">{formatAddress(opponent)}</p>
+                <Badge variant="neon-pink" className="text-xs">Opponent</Badge>
               </>
             ) : isSearching ? (
               <>
-                <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <span className="text-2xl">🔍</span>
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center animate-pulse relative">
+                  <span className="text-3xl">🔍</span>
+                  {/* Animated search rings */}
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/50 animate-ping" />
                 </div>
-                <p className="text-sm text-muted-foreground">Searching for opponent...</p>
+                <p className="text-sm text-muted-foreground">Searching...</p>
+                <div className="flex justify-center gap-1 mt-2">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </>
             ) : (
               <>
-                <div className="w-20 h-20 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">⏳</span>
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted/20 border-2 border-border flex items-center justify-center">
+                  <span className="text-3xl opacity-50">⏳</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Waiting to connect...</p>
+                <p className="text-sm text-muted-foreground">Waiting...</p>
               </>
             )}
           </div>
@@ -189,19 +221,32 @@ export default function WaitingRoom({ gameType, stake, account, matchId, onGameS
 
         {/* Countdown */}
         {opponent && (
-          <div className="text-center">
+          <div className="text-center py-6 border-t border-primary/20">
             <p className="text-muted-foreground mb-4">Game starts in:</p>
-            <p className="text-5xl font-bold text-primary">{countdown}</p>
+            <div className="relative inline-block">
+              <p className="text-7xl font-bold text-primary text-glow-cyan anim-countdown-pop" key={countdown}>
+                {countdown}
+              </p>
+              {/* Glow ring */}
+              <div className="absolute -inset-4 rounded-full border-2 border-primary/30 animate-ping" />
+            </div>
           </div>
         )}
 
         {/* Leave Queue Button */}
         {!opponent && isSearching && (
-          <button className="mt-6 w-full px-6 py-2 bg-gray-200 text-red-600 font-semibold rounded hover:bg-red-100 transition" onClick={() => { leaveQueue(); router.refresh ? router.refresh() : window.location.reload(); }}>
-            Leave Queue
-          </button>
+          <div className="mt-6 pt-6 border-t border-border/50">
+            <Button
+              variant="outline"
+              className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 hover:border-destructive"
+              onClick={() => { leaveQueue(); router.refresh ? router.refresh() : window.location.reload(); }}
+            >
+              Leave Queue
+            </Button>
+          </div>
         )}
       </Card>
     </div>
   )
 }
+

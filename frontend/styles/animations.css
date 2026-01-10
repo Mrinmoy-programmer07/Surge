@@ -1,0 +1,606 @@
+/* ============================================
+   SURGE GAMING - GSAP-COMPATIBLE ANIMATIONS
+   ============================================
+   
+   This file contains CSS animations designed to work
+   alongside GSAP for smooth, performant effects.
+   Import this in components that need advanced animations.
+*/
+
+/* ============================================
+   ENTRANCE ANIMATIONS
+   ============================================ */
+
+/* Fade in from different directions */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fade-in-down {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fade-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fade-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fade-in-scale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Cyber-specific entrances */
+@keyframes cyber-reveal {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) skewX(-5deg);
+        filter: blur(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) skewX(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes glitch-in {
+    0% {
+        opacity: 0;
+        transform: translateX(-5px);
+        clip-path: inset(50% 0 50% 0);
+    }
+
+    20% {
+        opacity: 1;
+        transform: translateX(5px);
+        clip-path: inset(0 0 0 0);
+    }
+
+    40% {
+        transform: translateX(-3px);
+    }
+
+    60% {
+        transform: translateX(3px);
+    }
+
+    80% {
+        transform: translateX(-1px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* ============================================
+   CONTINUOUS ANIMATIONS
+   ============================================ */
+
+/* Breathing/Pulse effects */
+@keyframes breathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
+@keyframes pulse-scale {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Rotating elements */
+@keyframes spin-slow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes orbit {
+    from {
+        transform: rotate(0deg) translateX(50px) rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg) translateX(50px) rotate(-360deg);
+    }
+}
+
+/* Wave/Shimmer effects */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes wave {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    25% {
+        transform: translateY(-5px) rotate(2deg);
+    }
+
+    75% {
+        transform: translateY(5px) rotate(-2deg);
+    }
+}
+
+/* ============================================
+   NEON GLOW ANIMATIONS
+   ============================================ */
+
+@keyframes neon-flicker {
+
+    0%,
+    19%,
+    21%,
+    23%,
+    25%,
+    54%,
+    56%,
+    100% {
+        opacity: 1;
+        text-shadow:
+            0 0 5px currentColor,
+            0 0 10px currentColor,
+            0 0 20px currentColor;
+    }
+
+    20%,
+    24%,
+    55% {
+        opacity: 0.8;
+        text-shadow: none;
+    }
+}
+
+@keyframes neon-pulse {
+
+    0%,
+    100% {
+        filter: brightness(1);
+        box-shadow:
+            0 0 5px currentColor,
+            0 0 10px currentColor;
+    }
+
+    50% {
+        filter: brightness(1.2);
+        box-shadow:
+            0 0 10px currentColor,
+            0 0 20px currentColor,
+            0 0 30px currentColor;
+    }
+}
+
+@keyframes glow-rotate {
+    0% {
+        box-shadow:
+            0 0 10px rgba(0, 240, 255, 0.5),
+            0 0 20px rgba(0, 240, 255, 0.3);
+    }
+
+    33% {
+        box-shadow:
+            0 0 10px rgba(255, 0, 128, 0.5),
+            0 0 20px rgba(255, 0, 128, 0.3);
+    }
+
+    66% {
+        box-shadow:
+            0 0 10px rgba(57, 255, 20, 0.5),
+            0 0 20px rgba(57, 255, 20, 0.3);
+    }
+
+    100% {
+        box-shadow:
+            0 0 10px rgba(0, 240, 255, 0.5),
+            0 0 20px rgba(0, 240, 255, 0.3);
+    }
+}
+
+/* ============================================
+   LOADING/SEARCHING ANIMATIONS
+   ============================================ */
+
+@keyframes radar-sweep {
+    0% {
+        transform: rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: rotate(360deg);
+        opacity: 1;
+    }
+}
+
+@keyframes radar-ping {
+    0% {
+        transform: scale(0.5);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes search-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 0 20px rgba(0, 240, 255, 0);
+    }
+}
+
+@keyframes dots-loading {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0.6);
+        opacity: 0.5;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   GAME-SPECIFIC ANIMATIONS
+   ============================================ */
+
+/* Countdown */
+@keyframes countdown-pop {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes countdown-shrink {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+}
+
+/* Score updates */
+@keyframes score-increase {
+    0% {
+        transform: scale(1);
+        color: inherit;
+    }
+
+    50% {
+        transform: scale(1.3);
+        color: var(--accent);
+        text-shadow: 0 0 20px rgba(57, 255, 20, 0.8);
+    }
+
+    100% {
+        transform: scale(1);
+        color: inherit;
+    }
+}
+
+@keyframes score-flash {
+
+    0%,
+    100% {
+        background: transparent;
+    }
+
+    50% {
+        background: rgba(57, 255, 20, 0.2);
+    }
+}
+
+/* Win/Lose announcements */
+@keyframes victory-burst {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-100%) rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* Card flip (for memory games) */
+@keyframes card-flip {
+    0% {
+        transform: perspective(1000px) rotateY(0deg);
+    }
+
+    100% {
+        transform: perspective(1000px) rotateY(180deg);
+    }
+}
+
+/* ============================================
+   UTILITY ANIMATION CLASSES
+   ============================================ */
+
+/* Entrance animations */
+.anim-fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.anim-fade-in-down {
+    animation: fade-in-down 0.5s ease-out forwards;
+}
+
+.anim-fade-in-left {
+    animation: fade-in-left 0.5s ease-out forwards;
+}
+
+.anim-fade-in-right {
+    animation: fade-in-right 0.5s ease-out forwards;
+}
+
+.anim-fade-in-scale {
+    animation: fade-in-scale 0.4s ease-out forwards;
+}
+
+.anim-cyber-reveal {
+    animation: cyber-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.anim-glitch-in {
+    animation: glitch-in 0.5s ease-out forwards;
+}
+
+/* Continuous animations */
+.anim-breathe {
+    animation: breathe 3s ease-in-out infinite;
+}
+
+.anim-pulse-scale {
+    animation: pulse-scale 2s ease-in-out infinite;
+}
+
+.anim-spin-slow {
+    animation: spin-slow 8s linear infinite;
+}
+
+.anim-shimmer {
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+}
+
+.anim-wave {
+    animation: wave 2s ease-in-out infinite;
+}
+
+/* Neon animations */
+.anim-neon-flicker {
+    animation: neon-flicker 3s ease-in-out infinite;
+}
+
+.anim-neon-pulse {
+    animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.anim-glow-rotate {
+    animation: glow-rotate 4s linear infinite;
+}
+
+/* Loading animations */
+.anim-radar {
+    animation: radar-sweep 2s linear infinite;
+}
+
+.anim-search-pulse {
+    animation: search-pulse 2s ease-in-out infinite;
+}
+
+/* Game animations */
+.anim-countdown-pop {
+    animation: countdown-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.anim-score-increase {
+    animation: score-increase 0.5s ease-out;
+}
+
+.anim-victory {
+    animation: victory-burst 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ============================================
+   ANIMATION DELAYS (for staggering)
+   ============================================ */
+
+.anim-delay-100 {
+    animation-delay: 100ms;
+}
+
+.anim-delay-200 {
+    animation-delay: 200ms;
+}
+
+.anim-delay-300 {
+    animation-delay: 300ms;
+}
+
+.anim-delay-400 {
+    animation-delay: 400ms;
+}
+
+.anim-delay-500 {
+    animation-delay: 500ms;
+}
+
+.anim-delay-600 {
+    animation-delay: 600ms;
+}
+
+.anim-delay-700 {
+    animation-delay: 700ms;
+}
+
+.anim-delay-800 {
+    animation-delay: 800ms;
+}
+
+.anim-delay-900 {
+    animation-delay: 900ms;
+}
+
+.anim-delay-1000 {
+    animation-delay: 1000ms;
+}
+
+/* ============================================
+   LOADER ANIMATIONS
+   ============================================ */
+
+@keyframes scan {
+    0% {
+        top: 0;
+    }
+
+    50% {
+        top: 100%;
+    }
+
+    100% {
+        top: 0;
+    }
+}
+
+.animate-scan {
+    animation: scan 3s ease-in-out infinite;
+}
+
+/* ============================================
+   REDUCED MOTION SUPPORT
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

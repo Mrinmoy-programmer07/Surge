@@ -10,33 +10,42 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Check } from "lucide-react"
+import { ChevronDown, Check, Loader2 } from "lucide-react"
 import { SUPPORTED_CHAINS, DEFAULT_CHAIN, mantleSepolia } from "@/lib/wagmi"
 
 interface ChainSwitcherProps {
     disabled?: boolean
 }
 
-// Chain styling with logo paths
-const CHAIN_STYLES: Record<number, { bg: string; border: string; text: string; iconPath: string }> = {
-    421614: { // Arbitrum
-        bg: "bg-blue-500/20",
-        border: "border-blue-500/40",
+// Chain styling with cyberpunk neon colors
+const CHAIN_STYLES: Record<number, {
+    bg: string
+    border: string
+    text: string
+    glow: string
+    iconPath: string
+}> = {
+    421614: { // Arbitrum Sepolia
+        bg: "bg-blue-500/10",
+        border: "border-blue-400/50",
         text: "text-blue-400",
+        glow: "shadow-[0_0_12px_rgba(59,130,246,0.4)]",
         iconPath: "/chains/arbitrum.svg",
     },
-    5003: { // Mantle
-        bg: "bg-emerald-500/20",
-        border: "border-emerald-500/40",
+    5003: { // Mantle Sepolia
+        bg: "bg-emerald-500/10",
+        border: "border-emerald-400/50",
         text: "text-emerald-400",
+        glow: "shadow-[0_0_12px_rgba(52,211,153,0.4)]",
         iconPath: "/chains/mantle.svg",
     },
 }
 
 const DEFAULT_STYLE = {
-    bg: "bg-primary/20",
-    border: "border-primary/40",
+    bg: "bg-primary/10",
+    border: "border-primary/50",
     text: "text-primary",
+    glow: "shadow-[0_0_12px_rgba(0,240,255,0.3)]",
     iconPath: "/chains/arbitrum.svg",
 }
 
@@ -96,29 +105,48 @@ export default function ChainSwitcher({ disabled = false }: ChainSwitcherProps) 
         }
     }
 
+    const isLoading = isPending || isSwitching
+
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="outline"
                     size="sm"
-                    disabled={disabled || isPending || isSwitching}
-                    className={`${currentStyle.bg} ${currentStyle.border} ${currentStyle.text} hover:bg-opacity-30 min-w-[140px] justify-between`}
+                    disabled={disabled || isLoading}
+                    className={`
+                        ${currentStyle.bg} ${currentStyle.border} ${currentStyle.text}
+                        ${!isLoading ? currentStyle.glow : ''}
+                        hover:bg-opacity-30 min-w-[140px] justify-between
+                        transition-all duration-300
+                        ${disabled ? 'opacity-50' : ''}
+                    `}
                 >
                     <span className="flex items-center gap-2">
-                        <Image
-                            src={currentStyle.iconPath}
-                            alt={currentChain.name}
-                            width={18}
-                            height={18}
-                            className="rounded-full"
-                        />
-                        <span className="font-medium">{currentChain.name.split(' ')[0]}</span>
+                        {isLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Image
+                                src={currentStyle.iconPath}
+                                alt={currentChain.name}
+                                width={18}
+                                height={18}
+                                className="rounded-full"
+                            />
+                        )}
+                        <span className="font-medium">
+                            {isLoading ? 'Switching...' : currentChain.name.split(' ')[0]}
+                        </span>
                     </span>
-                    <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                        className={`w-4 h-4 ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[180px] bg-card border-border">
+            <DropdownMenuContent
+                align="end"
+                className="w-[180px] bg-black/90 backdrop-blur-md border-primary/30"
+            >
                 {SUPPORTED_CHAINS.map((chain) => {
                     const style = CHAIN_STYLES[chain.id] || DEFAULT_STYLE
                     const isSelected = chain.id === chainId
@@ -127,7 +155,14 @@ export default function ChainSwitcher({ disabled = false }: ChainSwitcherProps) 
                         <DropdownMenuItem
                             key={chain.id}
                             onClick={() => handleChainSwitch(chain.id)}
-                            className={`cursor-pointer flex items-center justify-between ${isSelected ? style.bg : ''}`}
+                            className={`
+                                cursor-pointer flex items-center justify-between 
+                                transition-all duration-200
+                                ${isSelected
+                                    ? `${style.bg} ${style.text} border-l-2 ${style.border}`
+                                    : 'hover:bg-card/50 text-muted-foreground hover:text-foreground'
+                                }
+                            `}
                         >
                             <span className="flex items-center gap-2">
                                 <Image
@@ -137,9 +172,11 @@ export default function ChainSwitcher({ disabled = false }: ChainSwitcherProps) 
                                     height={18}
                                     className="rounded-full"
                                 />
-                                <span>{chain.name}</span>
+                                <span className={isSelected ? 'font-medium' : ''}>
+                                    {chain.name}
+                                </span>
                             </span>
-                            {isSelected && <Check className="w-4 h-4 text-primary" />}
+                            {isSelected && <Check className={`w-4 h-4 ${style.text}`} />}
                         </DropdownMenuItem>
                     )
                 })}
@@ -147,4 +184,5 @@ export default function ChainSwitcher({ disabled = false }: ChainSwitcherProps) 
         </DropdownMenu>
     )
 }
+
 

@@ -1,46 +1,46 @@
 "use client"
 
-import React from "react"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import Image from "next/image"
 
 interface ResultModalProps {
-  open: boolean
-  onClose: () => void
-  gifEmbedUrl: string
-  title?: string
+    open: boolean
+    onClose: () => void
+    gifEmbedUrl: string
+    title: string
 }
 
 export default function ResultModal({ open, onClose, gifEmbedUrl, title }: ResultModalProps) {
-  if (!open) return null
-  const isDirectImage = /\.(gif|png|jpe?g)(\?.*)?$/.test(gifEmbedUrl) || gifEmbedUrl.startsWith("data:")
+    const isLocalGif = gifEmbedUrl.startsWith("/")
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70">
-      <div className="bg-card rounded-lg p-4 max-w-md w-full shadow-lg">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-bold text-foreground">{title || "Result"}</h3>
-          <button
-            aria-label="Close"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="w-full h-64 flex items-center justify-center">
-          {isDirectImage ? (
-            <img src={gifEmbedUrl} alt={title || "result gif"} className="w-full h-full object-contain rounded-md bg-black" />
-          ) : (
-            <iframe
-              src={gifEmbedUrl}
-              title="result-gif"
-              className="w-full h-full rounded-md bg-black"
-              frameBorder={0}
-              allow="autoplay; fullscreen"
-              allowFullScreen
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  )
+    return (
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md bg-black/95 border-primary/30">
+                <DialogTitle className="text-center text-2xl font-bold text-primary mb-4">
+                    {title}
+                </DialogTitle>
+                <div className="flex justify-center">
+                    {isLocalGif ? (
+                        <Image
+                            src={gifEmbedUrl}
+                            alt={title}
+                            width={300}
+                            height={300}
+                            className="rounded-lg"
+                            unoptimized
+                        />
+                    ) : (
+                        <iframe
+                            src={gifEmbedUrl}
+                            width="300"
+                            height="300"
+                            frameBorder="0"
+                            allowFullScreen
+                            className="rounded-lg"
+                        />
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
 }
