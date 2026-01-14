@@ -18,7 +18,7 @@ const GAMES = [
     name: "Number Memory Battle",
     description: "Remember and repeat the number sequence faster than your opponent",
     iconPath: "/icons/number-memory1.png",
-    difficulty: "Medium" as const,
+    difficulty: "Hard" as const,
     color: "cyan" as const,
   },
   {
@@ -26,7 +26,7 @@ const GAMES = [
     name: "Word Scramble Duel",
     description: "Unscramble words faster than your opponent",
     iconPath: "/icons/word-scramble1.png",
-    difficulty: "Medium" as const,
+    difficulty: "Hard" as const,
     color: "pink" as const,
   },
   {
@@ -42,7 +42,7 @@ const GAMES = [
     name: "Reflex War",
     description: "Test your reaction time against your opponent",
     iconPath: "/icons/reflex-war1.png",
-    difficulty: "Easy" as const,
+    difficulty: "Medium" as const,
     color: "orange" as const,
   },
   {
@@ -50,7 +50,7 @@ const GAMES = [
     name: "Memory Match Showdown",
     description: "Match pairs faster than your opponent",
     iconPath: "/icons/memory-match1.png",
-    difficulty: "Medium" as const,
+    difficulty: "Hard" as const,
     color: "green" as const,
   },
 ]

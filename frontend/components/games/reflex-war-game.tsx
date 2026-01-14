@@ -31,7 +31,20 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
   const [withdrawn, setWithdrawn] = useState(false)
   const [withdrawTxHash, setWithdrawTxHash] = useState<string | null>(null)
   const [blockchainMatchReady, setBlockchainMatchReady] = useState(false)
+  const [earlyClick, setEarlyClick] = useState(false)
+  const [signalDelay, setSignalDelay] = useState(2000)
   const winnerSubmittedRef = useRef(false)
+
+  // Speed-based scoring: faster reaction = more points
+  const calculateRoundScore = (reactionTime: number): number => {
+    if (reactionTime < 250) return 3  // Lightning fast
+    if (reactionTime < 400) return 2  // Fast
+    if (reactionTime < 600) return 1  // Good
+    return 0  // Too slow
+  }
+
+  // Generate random delay between 1.5-4 seconds
+  const getRandomDelay = () => Math.floor(Math.random() * 2500) + 1500
 
   const { updatePlayerScore, finishGame } = useGameState()
   const { withdraw, isWithdrawing, withdrawSuccess, withdrawHash, withdrawDraw, isWithdrawingDraw, withdrawDrawSuccess, withdrawDrawHash } = useSurgeContract()
@@ -134,21 +147,50 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
     initializeMatch(account, opponent, { rounds: 5 })
   }, [matchId, account, opponent, initializeMatch])
 
+  // Start first round with random delay
   useEffect(() => {
+    const delay = getRandomDelay()
+    setSignalDelay(delay)
+
     const timer = setTimeout(() => {
-      setGamePhase("active")
-      setStartTime(Date.now())
-      setGameStarted(true)
-    }, 2000)
+      if (!earlyClick) {
+        setGamePhase("active")
+        setStartTime(Date.now())
+        setGameStarted(true)
+      }
+    }, delay)
 
     return () => clearTimeout(timer)
   }, [])
 
+  // Handle early click (before signal)
+  const handleEarlyClick = () => {
+    if (gamePhase === "waiting" && !earlyClick) {
+      setEarlyClick(true)
+      setPlayerReactionTime(-1) // -1 indicates early click
+      // Penalty: move to opponent turn with 0 points for this round
+      setTimeout(() => {
+        setGamePhase("opponent-turn")
+      }, 500)
+    }
+  }
+
   const handleClick = () => {
+    // Handle waiting phase click (early click penalty)
+    if (gamePhase === "waiting") {
+      handleEarlyClick()
+      return
+    }
+
     if (gamePhase !== "active" || !startTime) return
 
     const reactionTime = Date.now() - startTime
     setPlayerReactionTime(reactionTime)
+
+    // Add points based on reaction speed
+    const roundScore = calculateRoundScore(reactionTime)
+    setPlayerScore((prev) => prev + roundScore)
+
     setGamePhase("opponent-turn")
   }
 
@@ -166,41 +208,44 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
     }
   }, [matchState.player1Score, matchState.player2Score, matchState.player1, account, gamePhase])
 
-  // Handle each round's opponent turn (no real opponent data, just local timing)
+  // Handle each round's opponent turn
   useEffect(() => {
     if (gamePhase !== "opponent-turn") return
 
     const timer = setTimeout(() => {
-      // Just give player a point for completing the round
-      // Don't simulate opponent - we'll compare final scores at the end
-      setPlayerScore((prev) => prev + 1)
-
       setRoundsPlayed((prev) => prev + 1)
 
       if (roundsPlayed + 1 >= 5) {
         // All rounds complete - move to results
         setGamePhase("results")
       } else {
-        // Next round
+        // Next round with new random delay
         setTimeout(() => {
           setRound((prev) => prev + 1)
           setPlayerReactionTime(null)
           setOpponentReactionTime(null)
+          setEarlyClick(false)
           setGamePhase("waiting")
           setStartTime(null)
           setGameStarted(false)
 
+          // Random delay for next round (1.5-4 seconds)
+          const nextDelay = getRandomDelay()
+          setSignalDelay(nextDelay)
+
           setTimeout(() => {
-            setGamePhase("active")
-            setStartTime(Date.now())
-            setGameStarted(true)
-          }, 2000)
+            if (!earlyClick) {
+              setGamePhase("active")
+              setStartTime(Date.now())
+              setGameStarted(true)
+            }
+          }, nextDelay)
         }, 2000)
       }
-    }, 2000)
+    }, 1500)
 
     return () => clearTimeout(timer)
-  }, [gamePhase, playerReactionTime, roundsPlayed])
+  }, [gamePhase, roundsPlayed, earlyClick])
 
   useEffect(() => {
     if (gamePhase === "results") {

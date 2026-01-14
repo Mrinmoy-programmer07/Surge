@@ -17,6 +17,7 @@ interface MemoryMatchGameProps {
   chainId: number
 }
 
+// 10 pairs = 20 cards (harder difficulty)
 const CARD_PAIRS = [
   { id: 1, emoji: "🎮" },
   { id: 2, emoji: "🎮" },
@@ -30,6 +31,14 @@ const CARD_PAIRS = [
   { id: 10, emoji: "🔥" },
   { id: 11, emoji: "🌟" },
   { id: 12, emoji: "🌟" },
+  { id: 13, emoji: "🎯" },
+  { id: 14, emoji: "🎯" },
+  { id: 15, emoji: "💰" },
+  { id: 16, emoji: "💰" },
+  { id: 17, emoji: "🏆" },
+  { id: 18, emoji: "🏆" },
+  { id: 19, emoji: "🎨" },
+  { id: 20, emoji: "🎨" },
 ]
 
 export default function MemoryMatchGame({ account, opponent, stake, matchId, chainId }: MemoryMatchGameProps) {
@@ -40,7 +49,7 @@ export default function MemoryMatchGame({ account, opponent, stake, matchId, cha
   const [playerScore, setPlayerScore] = useState(0)
   const [opponentScore, setOpponentScore] = useState(0)
   const [playerTurns, setPlayerTurns] = useState(0)
-  const [gameTime, setGameTime] = useState(60)
+  const [gameTime, setGameTime] = useState(45) // Reduced from 60s to 45s
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawn, setWithdrawn] = useState(false)
   const [withdrawTxHash, setWithdrawTxHash] = useState<string | null>(null)
@@ -292,8 +301,8 @@ export default function MemoryMatchGame({ account, opponent, stake, matchId, cha
                       key={index}
                       onClick={() => handleCardClick(index)}
                       className={`aspect-square rounded-lg font-bold text-2xl transition-all ${flipped.includes(index) || matched.includes(index)
-                          ? "bg-primary/20 border-2 border-primary text-foreground shadow-[0_0_15px_rgba(0,240,255,0.4)]"
-                          : "bg-card border border-border hover:border-primary hover:shadow-[0_0_10px_rgba(0,240,255,0.2)] cursor-pointer"
+                        ? "bg-primary/20 border-2 border-primary text-foreground shadow-[0_0_15px_rgba(0,240,255,0.4)]"
+                        : "bg-card border border-border hover:border-primary hover:shadow-[0_0_10px_rgba(0,240,255,0.2)] cursor-pointer"
                         } ${matched.includes(index) ? 'bg-accent/20 border-accent' : ''}`}
                     >
                       {flipped.includes(index) || matched.includes(index) ? card.emoji : "?"}

@@ -26,9 +26,9 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
   const [isMyTurn, setIsMyTurn] = useState(false)
   const [myFinalScore, setMyFinalScore] = useState<number | null>(null)
   const [opponentFinalScore, setOpponentFinalScore] = useState<number | null>(null)
-  const [scrambledInputs, setScrambledInputs] = useState<number[]>([])
   const [waitingForOpponent, setWaitingForOpponent] = useState(false)
   const [waitingTimer, setWaitingTimer] = useState<number>(5)
+  const [inputTimeLeft, setInputTimeLeft] = useState<number>(15) // 15 second countdown
   const winnerSubmittedRef = useRef(false)
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawn, setWithdrawn] = useState(false)
@@ -44,15 +44,8 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
     error: apiError
   } = useMatchApi(matchId, account, chainId)
 
-  // Function to scramble the sequence for input buttons
-  const scrambleSequence = (seq: number[]): number[] => {
-    const scrambled = [...seq]
-    for (let i = scrambled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-        ;[scrambled[i], scrambled[j]] = [scrambled[j], scrambled[i]]
-    }
-    return scrambled
-  }
+  // Full 0-9 keypad for input (no hints - harder!)
+  const fullKeypad = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 
   // Handle withdrawal
   const handleWithdraw = async (isDraw: boolean = false) => {
@@ -127,11 +120,10 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
     }
   }, [withdrawDrawSuccess, withdrawDrawHash, matchId, account, stake])
 
-  // Initialize match on mount
+  // Initialize match on mount - 8 digits for harder difficulty
   useEffect(() => {
-    const newSequence = generateNumberSequence(5)
+    const newSequence = generateNumberSequence(8) // Increased from 5 to 8
     setSequence(newSequence)
-    setScrambledInputs(scrambleSequence(newSequence))
 
     // Initialize match in API
     initializeMatch(account, opponent, { sequence: newSequence })
@@ -144,13 +136,13 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
     }
   }, [matchState.status])
 
-  // Display sequence animation
+  // Display sequence animation - 500ms per digit (faster = harder)
   useEffect(() => {
     if (gamePhase !== "display" || displayIndex >= sequence.length) return
 
     const timer = setTimeout(() => {
       setDisplayIndex((prev) => prev + 1)
-    }, 800)
+    }, 500) // Reduced from 800ms to 500ms
 
     return () => clearTimeout(timer)
   }, [gamePhase, displayIndex, sequence])
@@ -162,9 +154,27 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
         setGamePhase("input")
         setDisplayIndex(0)
         setIsMyTurn(true)
+        setInputTimeLeft(15) // Reset countdown timer
       }, 500) // Small delay before input phase
     }
   }, [displayIndex, gamePhase, sequence])
+
+  // Countdown timer during input phase - 15 seconds to answer
+  useEffect(() => {
+    if (gamePhase !== "input" || !isMyTurn || waitingForOpponent) return
+
+    if (inputTimeLeft > 0) {
+      const timer = setTimeout(() => setInputTimeLeft(prev => prev - 1), 1000)
+      return () => clearTimeout(timer)
+    } else {
+      // Time's up! Submit partial score
+      const score = calculateScore(sequence, playerInput)
+      setMyFinalScore(score)
+      apiSubmitScore(score)
+      setPlayerInput([])
+      setWaitingForOpponent(true)
+    }
+  }, [gamePhase, isMyTurn, inputTimeLeft, waitingForOpponent, sequence, playerInput, apiSubmitScore])
 
   // Check for game over
   useEffect(() => {
@@ -441,19 +451,30 @@ export default function NumberMemoryGame({ account, opponent, stake, matchId, ch
           {/* Input Phase */}
           {gamePhase === "input" && isMyTurn && (
             <div className="text-center mb-8">
+              {/* Countdown Timer */}
+              <div className="mb-4">
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${inputTimeLeft <= 5
+                    ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
+                    : 'bg-accent/10 border-accent/30 text-accent'
+                  }`}>
+                  <span className="text-2xl font-bold">{inputTimeLeft}</span>
+                  <span className="text-sm">seconds left</span>
+                </div>
+              </div>
+
               <h3 className="text-xl font-bold mb-2 text-accent text-glow-green">Your Turn!</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                Click the numbers in the correct order
+              <p className="text-sm text-muted-foreground mb-4">
+                Enter the {sequence.length}-digit sequence ({playerInput.length}/{sequence.length})
               </p>
 
-              {/* Number Grid */}
-              <div className="grid grid-cols-5 gap-3 max-w-md mx-auto mb-6">
-                {scrambledInputs.map((num, index) => (
+              {/* Full 0-9 Keypad - No hints! */}
+              <div className="grid grid-cols-5 gap-3 max-w-sm mx-auto mb-6">
+                {fullKeypad.map((num) => (
                   <Button
-                    key={`${num}-${index}`}
+                    key={num}
                     onClick={() => handleNumberClick(num)}
                     variant="outline"
-                    className="w-14 h-14 text-xl font-bold hover:border-primary hover:text-primary hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all"
+                    className="w-14 h-14 text-xl font-bold hover:border-primary hover:text-primary hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all active:scale-95"
                   >
                     {num}
                   </Button>

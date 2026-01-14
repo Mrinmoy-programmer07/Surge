@@ -18,24 +18,26 @@ interface WordScrambleGameProps {
   chainId: number
 }
 
-const WORD_LIST = [
-  { word: "JAVASCRIPT", scrambled: "TSCRIPJAVA" },
-  { word: "BLOCKCHAIN", scrambled: "CHAINBLOCK" },
-  { word: "ETHEREUM", scrambled: "UMETHARE" },
-  { word: "DEVELOPER", scrambled: "OPERDEVEL" },
-  { word: "ALGORITHM", scrambled: "RITHMOLOG" },
-  { word: "DATABASE", scrambled: "BASEDATAB" },
-  { word: "NETWORK", scrambled: "WORKNETNE" },
-  { word: "SECURITY", scrambled: "URITYSEC" },
-]
+// Speed bonus: faster answer = more points
+const calculateWordScore = (timeRemaining: number): number => {
+  if (timeRemaining >= 12) return 3  // Super fast (answered in <3s)
+  if (timeRemaining >= 8) return 2   // Fast (answered in <7s)
+  return 1                            // Normal
+}
+
+interface WordItem {
+  word: string
+  scrambled: string
+}
 
 export default function WordScrambleGame({ account, opponent, stake, matchId, chainId }: WordScrambleGameProps) {
-  const [gamePhase, setGamePhase] = useState<"display" | "input" | "opponent-turn" | "results">("display")
+  const [gamePhase, setGamePhase] = useState<"loading" | "display" | "input" | "opponent-turn" | "results">("loading")
+  const [wordList, setWordList] = useState<WordItem[]>([])
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [playerScore, setPlayerScore] = useState(0)
   const [opponentScore, setOpponentScore] = useState(0)
   const [playerInput, setPlayerInput] = useState("")
-  const [gameTime, setGameTime] = useState(30)
+  const [gameTime, setGameTime] = useState(15)
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null)
   const [wordsCompleted, setWordsCompleted] = useState(0)
   const [withdrawing, setWithdrawing] = useState(false)
@@ -140,17 +142,52 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
     }
   }, [withdrawDrawSuccess, withdrawDrawHash, matchId, account, stake])
 
-  // Initialize match on mount
-  useEffect(() => {
-    initializeMatch(account, opponent, { words: WORD_LIST })
-  }, [matchId, account, opponent, initializeMatch])
+  // Determine if this player is player1 (match creator) who should fetch words
+  const isPlayer1 = matchState.player1 === '' || matchState.player1 === account
 
+  // Player 1: Fetch random words from API and initialize match
   useEffect(() => {
-    setGamePhase("display")
-  }, [])
+    const fetchWords = async () => {
+      if (gamePhase !== "loading" || !isPlayer1) return
 
+      try {
+        const response = await fetch('/api/random-words?count=10&minLength=7&maxLength=14')
+        const data = await response.json()
+
+        if (data.success && data.words.length > 0) {
+          setWordList(data.words)
+          initializeMatch(account, opponent, { words: data.words })
+          setGamePhase("display")
+          console.log('✅ Player 1: Fetched words:', data.words.length)
+        }
+      } catch (error) {
+        console.error('Failed to fetch words:', error)
+        const fallbackWords: WordItem[] = [
+          { word: "BLOCKCHAIN", scrambled: "CHAINBLOCK" },
+          { word: "ALGORITHM", scrambled: "RITHMOLOG" },
+          { word: "COMPUTER", scrambled: "UTERCOMP" },
+        ]
+        setWordList(fallbackWords)
+        initializeMatch(account, opponent, { words: fallbackWords })
+        setGamePhase("display")
+      }
+    }
+
+    fetchWords()
+  }, [matchId, account, opponent, initializeMatch, isPlayer1, gamePhase])
+
+  // Player 2: Receive words from match state when available
   useEffect(() => {
-    if (gamePhase !== "input") return
+    if (!isPlayer1 && gamePhase === "loading" && matchState.gameData?.words) {
+      console.log('✅ Player 2: Received words from match:', matchState.gameData.words.length)
+      setWordList(matchState.gameData.words)
+      setGamePhase("display")
+    }
+  }, [isPlayer1, gamePhase, matchState.gameData])
+
+  // Game timer - only runs during input phase
+  useEffect(() => {
+    if (gamePhase === "loading" || gamePhase !== "input") return
 
     const timer = setInterval(() => {
       setGameTime((prev) => {
@@ -165,11 +202,12 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
     return () => clearInterval(timer)
   }, [gamePhase])
 
+  // Transition from display to input phase
   useEffect(() => {
-    if (gamePhase === "display") {
+    if (gamePhase === "display" && wordList.length > 0) {
       const timer = setTimeout(() => {
         setGamePhase("input")
-        setGameTime(30)
+        setGameTime(15)
       }, 2000)
       return () => clearTimeout(timer)
     }
@@ -218,20 +256,24 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
   }, [gamePhase, playerScore, opponentScore, account, opponent, updatePlayerScore, finishGame])
 
   const handleSubmit = () => {
-    const currentWord = WORD_LIST[currentWordIndex]
+    if (wordList.length === 0) return
+
+    const currentWord = wordList[currentWordIndex]
     const isCorrect = playerInput.toUpperCase() === currentWord.word
 
     if (isCorrect) {
       setFeedback("correct")
-      setPlayerScore((prev) => prev + 1)
+      // Speed bonus: faster = more points
+      const points = calculateWordScore(gameTime)
+      setPlayerScore((prev) => prev + points)
       setWordsCompleted((prev) => prev + 1)
 
-      if (currentWordIndex < WORD_LIST.length - 1) {
+      if (currentWordIndex < wordList.length - 1) {
         setTimeout(() => {
           setCurrentWordIndex((prev) => prev + 1)
           setPlayerInput("")
           setFeedback(null)
-          setGameTime(30)
+          setGameTime(15) // Reset to 15 seconds
         }, 1000)
       } else {
         setTimeout(() => {
@@ -265,7 +307,7 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
     }
   }, [matchState.player1Score, matchState.player2Score, matchState.player1, account, gamePhase])
 
-  const currentWord = WORD_LIST[currentWordIndex]
+  const currentWord = wordList[currentWordIndex]
   const winner = playerScore > opponentScore ? "You" : opponentScore > playerScore ? "Opponent" : "Draw"
 
   return (
@@ -280,7 +322,7 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
           <div className="text-center flex-1">
             <h2 className="text-xl font-bold text-foreground">🔤 <span className="text-gradient-cyber">Word Scramble</span></h2>
             <p className="text-sm text-muted-foreground">
-              {wordsCompleted} / {WORD_LIST.length} words
+              {wordsCompleted} / {wordList.length} words
             </p>
           </div>
           <div className="text-center flex-1">
@@ -315,7 +357,7 @@ export default function WordScrambleGame({ account, opponent, stake, matchId, ch
                         ⏱️ {gameTime}s
                       </Badge>
                       <p className="text-sm text-muted-foreground">
-                        Word {currentWordIndex + 1} / {WORD_LIST.length}
+                        Word {currentWordIndex + 1} / {wordList.length}
                       </p>
                     </div>
                     <Input
