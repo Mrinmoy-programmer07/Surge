@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Medal, TrendingUp } from "lucide-react"
+import { Medal } from "lucide-react"
 import { useLeaderboard } from "@/hooks/use-leaderboard"
 import PopArtTitle from "@/components/ui/pop-art-title"
 
@@ -54,7 +54,6 @@ export default function LeaderboardPage() {
                     const rank = index + 1
                     const winRate = entry.wins > 0 ? Math.round((entry.wins / (entry.wins + 5)) * 100) : 0
                     const earnings = `${entry.totalEarnings.toFixed(4)} ETH`
-                    const streak = Math.floor(Math.random() * 10)
 
                     return (
                         <div
@@ -83,13 +82,6 @@ export default function LeaderboardPage() {
                                 <div className="text-right">
                                     <p className="text-sm font-semibold text-accent">{earnings}</p>
                                     <p className="text-xs text-muted-foreground">earnings</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="flex items-center gap-1">
-                                        <TrendingUp className="w-4 h-4 text-secondary" />
-                                        <p className="text-sm font-semibold text-secondary">{streak}</p>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">streak</p>
                                 </div>
                             </div>
                         </div>
