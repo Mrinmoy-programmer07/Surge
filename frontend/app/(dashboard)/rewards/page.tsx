@@ -13,7 +13,7 @@ const rewards = [
         description: "Win your first game",
         icon: Trophy,
         progress: 100,
-        reward: "0.01 ETH",
+        reward: "0.01 MNT",
         claimed: true,
     },
     {
@@ -22,7 +22,7 @@ const rewards = [
         description: "Win 5 games in a row",
         icon: Zap,
         progress: 80,
-        reward: "0.05 ETH",
+        reward: "0.05 MNT",
         claimed: false,
     },
     {
@@ -31,7 +31,7 @@ const rewards = [
         description: "Reach 75% win rate",
         icon: Star,
         progress: 75,
-        reward: "0.1 ETH",
+        reward: "0.1 MNT",
         claimed: false,
     },
     {
@@ -40,16 +40,16 @@ const rewards = [
         description: "Play all 5 game types",
         icon: Gift,
         progress: 100,
-        reward: "0.025 ETH",
+        reward: "0.025 MNT",
         claimed: true,
     },
     {
         id: 5,
         name: "High Roller",
-        description: "Win 0.5 ETH",
+        description: "Win 0.5 MNT",
         icon: Trophy,
         progress: 45,
-        reward: "0.2 ETH",
+        reward: "0.2 MNT",
         claimed: false,
     },
     {
@@ -58,7 +58,7 @@ const rewards = [
         description: "Reach 100 total wins",
         icon: Lock,
         progress: 24,
-        reward: "0.5 ETH",
+        reward: "0.5 MNT",
         claimed: false,
     },
 ]
@@ -139,7 +139,7 @@ export default function RewardsPage() {
                     {/* Header */}
                     <div>
                         <h1 className="text-3xl font-bold text-foreground">Rewards</h1>
-                        <p className="text-muted-foreground mt-2">Complete achievements to earn bonus ETH</p>
+                        <p className="text-muted-foreground mt-2">Complete achievements to earn bonus MNT</p>
                     </div>
 
                     {/* Rewards Grid */}

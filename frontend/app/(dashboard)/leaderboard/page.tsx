@@ -53,7 +53,7 @@ export default function LeaderboardPage() {
                 {entries.map((entry, index) => {
                     const rank = index + 1
                     const winRate = entry.wins > 0 ? Math.round((entry.wins / (entry.wins + 5)) * 100) : 0
-                    const earnings = `${entry.totalEarnings.toFixed(4)} ETH`
+                    const earnings = `${entry.totalEarnings.toFixed(4)} MNT`
 
                     return (
                         <div

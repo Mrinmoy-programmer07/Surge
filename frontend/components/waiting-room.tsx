@@ -116,10 +116,10 @@ export default function WaitingRoom({ gameType, stake, account, matchId, onGameS
       <Card className="w-full max-w-2xl p-8 border-primary/20 bg-card/80 backdrop-blur-sm">
         {/* Title with animated glow */}
         <h2 className={`text-2xl font-bold mb-8 text-center ${opponent
-            ? "text-accent text-glow-green"
-            : isSearching
-              ? "text-primary text-glow-cyan animate-pulse"
-              : "text-foreground"
+          ? "text-accent text-glow-green"
+          : isSearching
+            ? "text-primary text-glow-cyan animate-pulse"
+            : "text-foreground"
           }`}>
           {opponent
             ? "⚔️ Match Found!"
@@ -172,14 +172,14 @@ export default function WaitingRoom({ gameType, stake, account, matchId, onGameS
           <div className="flex items-center justify-center">
             <div className="text-center">
               <div className={`text-4xl font-bold mb-2 ${opponent
-                  ? "text-gradient-cyber"
-                  : "text-muted-foreground"
+                ? "text-gradient-cyber"
+                : "text-muted-foreground"
                 }`}>
                 VS
               </div>
               <div className="px-3 py-1 bg-warning/10 border border-warning/30 rounded-lg">
                 <p className="text-xs text-muted-foreground">Stake</p>
-                <p className="text-sm font-bold text-warning">{stake} ETH</p>
+                <p className="text-sm font-bold text-warning">{stake} MNT</p>
               </div>
             </div>
           </div>

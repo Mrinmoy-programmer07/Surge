@@ -68,7 +68,7 @@ export default function AppTopbar({ account, isConnected, onDisconnect }: AppTop
                     <div className="flex flex-col">
                         <span className="text-xs text-muted-foreground">Balance</span>
                         <span className="text-sm font-bold text-accent text-glow-green">
-                            {isLoading ? "..." : `${balance} ${symbol || "ETH"}`}
+                            {isLoading ? "..." : `${balance} ${symbol || "MNT"}`}
                         </span>
                     </div>
                 </div>

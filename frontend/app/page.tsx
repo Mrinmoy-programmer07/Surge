@@ -159,7 +159,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-2xl mb-1">💰</p>
-                <p className="text-xs text-muted-foreground">Win ETH</p>
+                <p className="text-xs text-muted-foreground">Win MNT</p>
               </div>
             </div>
           </Card>

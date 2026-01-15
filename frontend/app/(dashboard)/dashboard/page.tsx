@@ -71,7 +71,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-accent text-glow-green stat-value eth-pulse">
-                            {stats.totalWinnings.toFixed(4)} ETH
+                            {stats.totalWinnings.toFixed(4)} MNT
                         </div>
                         <p className="text-xs text-muted-foreground">Lifetime earnings</p>
                     </CardContent>

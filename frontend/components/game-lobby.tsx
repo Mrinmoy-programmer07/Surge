@@ -47,7 +47,7 @@ export default function GameLobby({ account, onDisconnect }: GameLobbyProps) {
 
       toast({
         title: "Depositing Stake",
-        description: `Depositing ${stakeAmount} ETH. Please confirm the transaction.`,
+        description: `Depositing ${stakeAmount} MNT. Please confirm the transaction.`,
       })
 
       // Call depositStake to deposit stake
@@ -152,7 +152,7 @@ export default function GameLobby({ account, onDisconnect }: GameLobbyProps) {
             </p>
 
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 border border-accent/30 mt-6">
-              <span className="text-accent font-bold text-lg">{stake} ETH</span>
+              <span className="text-accent font-bold text-lg">{stake} MNT</span>
             </div>
 
             <div className="mt-6">
@@ -201,7 +201,7 @@ export default function GameLobby({ account, onDisconnect }: GameLobbyProps) {
               </div>
 
               <h3 className="text-3xl font-black text-white tracking-wide">1v1</h3>
-              <p className="text-muted-foreground">Battle random opponents in skill-based games and win ETH</p>
+              <p className="text-muted-foreground">Battle random opponents in skill-based games and win MNT</p>
 
               <div className="mt-4 px-6 py-2 bg-primary/20 rounded-full text-primary text-sm font-bold uppercase tracking-widest group-hover:bg-primary group-hover:text-black transition-all">
                 Play Now →
@@ -253,7 +253,7 @@ export default function GameLobby({ account, onDisconnect }: GameLobbyProps) {
       <div className="text-center mb-12">
         <PopArtTitle>Choose Your Challenge</PopArtTitle>
         <p className="text-lg text-muted-foreground mt-6">
-          Compete <span className="text-primary font-semibold">1v1</span> in skill-based games and win <span className="text-warning font-semibold">ETH</span>
+          Compete <span className="text-primary font-semibold">1v1</span> in skill-based games and win <span className="text-warning font-semibold">MNT</span>
         </p>
       </div>
       {/* Game Selection */}

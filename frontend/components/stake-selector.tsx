@@ -71,7 +71,7 @@ export default function StakeSelector({ game, onConfirm, onBack }: StakeSelector
                   <span className={`text-2xl font-black tracking-wider font-mono ${isSelected ? 'text-primary text-glow-cyan' : 'text-foreground/80'}`}>
                     {stake}
                   </span>
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">ETH</span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">MNT</span>
 
                   {/* Corner accents for selected state */}
                   {isSelected && (
@@ -103,7 +103,7 @@ export default function StakeSelector({ game, onConfirm, onBack }: StakeSelector
               className="pl-10 h-12 bg-card/50 border-input transition-all focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <span className="text-xs font-bold text-muted-foreground">ETH</span>
+              <span className="text-xs font-bold text-muted-foreground">MNT</span>
             </div>
           </div>
 
@@ -121,12 +121,12 @@ export default function StakeSelector({ game, onConfirm, onBack }: StakeSelector
                       Potential Winnings
                     </p>
                     <p className="text-2xl font-black text-accent text-glow-green leading-none">
-                      +{potentialWin.toFixed(5)} ETH
+                      +{potentialWin.toFixed(5)} MNT
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-muted-foreground">Total Pot</p>
-                    <p className="text-sm font-mono text-foreground/80">{totalPot.toFixed(5)} ETH</p>
+                    <p className="text-sm font-mono text-foreground/80">{totalPot.toFixed(5)} MNT</p>
                   </div>
                 </div>
               </div>

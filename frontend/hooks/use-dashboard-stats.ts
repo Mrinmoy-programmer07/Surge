@@ -177,7 +177,7 @@ export function useDashboardStats(walletAddress: string | undefined) {
         opponent: shortenAddress(opponent),
         game: GAME_TYPE_NAMES[match.gameType] || match.gameType,
         result,
-        amount: `${amountPrefix}${stake.toFixed(4)} ETH`,
+        amount: `${amountPrefix}${stake.toFixed(4)} MNT`,
         time: formatTimeAgo(match.timestamp),
       }
     })

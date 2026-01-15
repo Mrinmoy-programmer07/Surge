@@ -398,7 +398,7 @@ export default function ReflexWarGame({ account, opponent, stake, matchId, chain
 
                 {winner === "You" && (
                   <p className="text-xl font-bold text-accent text-glow-green mb-6">
-                    💰 +{(parseFloat(stake) * 2 * 0.75).toFixed(4)} ETH
+                    💰 +{(parseFloat(stake) * 2 * 0.75).toFixed(4)} MNT
                   </p>
                 )}
 

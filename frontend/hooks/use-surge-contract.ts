@@ -43,7 +43,7 @@ export function useSurgeContract() {
     if (minStake) {
       console.log(
         "✅ Contract is deployed! MIN_STAKE:",
-        Number(minStake) / 1e18 + " ETH"
+        Number(minStake) / 1e18 + " MNT"
       );
     } else if (contractReadError) {
       console.error(
@@ -129,7 +129,7 @@ export function useSurgeContract() {
       address: contractAddress,
       matchId,
       stakeAmount: stakeAmount.toString(),
-      stakeInETH: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
+      stakeInETH: (Number(stakeAmount) / 1e18).toFixed(4) + " MNT",
     });
 
     if (!contractAddress) {
@@ -144,13 +144,13 @@ export function useSurgeContract() {
 
     if (balance && balance.value < stakeAmount) {
       console.error("❌ Insufficient balance!", {
-        required: (Number(stakeAmount) / 1e18).toFixed(4) + " ETH",
+        required: (Number(stakeAmount) / 1e18).toFixed(4) + " MNT",
         available: balance.formatted + " " + balance.symbol,
       });
       throw new Error(
         `Insufficient balance. Need ${(Number(stakeAmount) / 1e18).toFixed(
           4
-        )} ETH but only have ${balance.formatted} ${balance.symbol}`
+        )} MNT but only have ${balance.formatted} ${balance.symbol}`
       );
     }
 

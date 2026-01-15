@@ -206,22 +206,22 @@ export default function GameResultCard({
                     {isWinner && !isDraw ? (
                         <div className="mb-6 p-4 bg-accent/10 rounded-xl border border-accent/30">
                             <p className="text-3xl font-bold text-accent text-glow-green mb-2">
-                                💰 +{winnerPayout} ETH
+                                💰 +{winnerPayout} MNT
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                Platform Fee (25%): {platformFee} ETH
+                                Platform Fee (25%): {platformFee} MNT
                             </p>
                         </div>
                     ) : isDraw ? (
                         <div className="mb-6 p-4 bg-warning/10 rounded-xl border border-warning/30">
                             <p className="text-2xl font-bold text-warning">
-                                Stake Refunded: {stake} ETH
+                                Stake Refunded: {stake} MNT
                             </p>
                         </div>
                     ) : (
                         <div className="mb-6 p-4 bg-secondary/10 rounded-xl border border-secondary/30">
                             <p className="text-2xl font-bold text-secondary/70">
-                                -{stake} ETH
+                                -{stake} MNT
                             </p>
                         </div>
                     )}
@@ -272,7 +272,7 @@ export default function GameResultCard({
                                         Confirming...
                                     </span>
                                 ) : (
-                                    `💎 Withdraw ${winnerPayout} ETH`
+                                    `💎 Withdraw ${winnerPayout} MNT`
                                 )}
                             </Button>
                         )}
@@ -286,7 +286,7 @@ export default function GameResultCard({
                                 size="lg"
                                 className="px-8"
                             >
-                                {withdrawing ? 'Confirming...' : `Withdraw Stake (${stake} ETH)`}
+                                {withdrawing ? 'Confirming...' : `Withdraw Stake (${stake} MNT)`}
                             </Button>
                         )}
 
@@ -294,7 +294,7 @@ export default function GameResultCard({
                         {withdrawn && (
                             <div className="p-4 bg-accent/10 border border-accent/30 rounded-lg">
                                 <p className="text-accent font-bold text-glow-green">
-                                    ✅ Withdrawn {isDraw ? stake : winnerPayout} ETH
+                                    ✅ Withdrawn {isDraw ? stake : winnerPayout} MNT
                                 </p>
                                 {withdrawTxHash && (
                                     <a

@@ -32,7 +32,7 @@ export const CHAINS: Record<SupportedChainId, ChainConfig> = {
         shortName: 'ARB',
         nativeCurrency: {
             name: 'Ethereum',
-            symbol: 'ETH',
+            symbol: 'MNT',
             decimals: 18,
         },
         rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',

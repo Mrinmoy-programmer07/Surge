@@ -56,7 +56,7 @@ export async function GET() {
       news: [
         { title: "Welcome to SURGE Gaming Arena!", source: "SURGE", url: "#" },
         { title: "Compete 1v1 in skill-based games", source: "SURGE", url: "#" },
-        { title: "Win ETH by proving your gaming skills", source: "SURGE", url: "#" },
+        { title: "Win MNT by proving your gaming skills", source: "SURGE", url: "#" },
       ],
       timestamp: Date.now(),
       isFallback: true
